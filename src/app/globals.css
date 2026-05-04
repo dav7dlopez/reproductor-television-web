@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
+
+:root {
+  --background: #020617;
+  --foreground: #f8fafc;
+}
+
+[data-theme="light"] {
+  --background: #eaf6ff;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-space-grotesk);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--background);
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.18), transparent 28rem),
+    radial-gradient(circle at 85% 20%, rgba(37, 99, 235, 0.18), transparent 24rem),
+    linear-gradient(135deg, #020617 0%, #07111f 48%, #081827 100%);
+  color: var(--foreground);
+  font-family: var(--font-manrope), sans-serif;
+}
+
+[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.22), transparent 28rem),
+    radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.18), transparent 24rem),
+    linear-gradient(135deg, #e0f2fe 0%, #f8fafc 48%, #dbeafe 100%);
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-space-grotesk), sans-serif;
+}
+
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.35);
+}
