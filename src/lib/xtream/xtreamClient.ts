@@ -2,6 +2,12 @@ import { buildPlayerApiUrl } from "@/lib/xtream/xtreamUrls";
 import type { XtreamCredentialsInput, XtreamLiveCategory, XtreamLiveStream, XtreamLoadedData, XtreamUserInfoResponse } from "@/lib/xtream/xtreamTypes";
 
 export async function loadXtreamLiveData(credentials: XtreamCredentialsInput): Promise<XtreamLoadedData> {
+  // Prefer server-side route to avoid browser-side CORS in production (e.g. Vercel).
+  const viaServer = await tryLoadViaServerRoute(credentials);
+  if (viaServer) {
+    return viaServer;
+  }
+
   const [userInfo, categories, streams] = await Promise.all([
     fetchXtreamJson<XtreamUserInfoResponse>(credentials),
     fetchXtreamJson<XtreamLiveCategory[]>(credentials, "get_live_categories"),
@@ -23,6 +29,33 @@ export async function loadXtreamLiveData(credentials: XtreamCredentialsInput): P
   }
 
   return { userInfo, categories, streams };
+}
+
+async function tryLoadViaServerRoute(credentials: XtreamCredentialsInput): Promise<XtreamLoadedData | undefined> {
+  try {
+    const response = await fetch("/api/xtream/live", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({
+        serverUrl: credentials.serverUrl,
+        username: credentials.username,
+        password: credentials.password,
+      }),
+    });
+
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const data = (await response.json()) as XtreamLoadedData;
+    if (!data || !Array.isArray(data.streams) || !Array.isArray(data.categories)) {
+      return undefined;
+    }
+    return data;
+  } catch {
+    return undefined;
+  }
 }
 
 async function fetchXtreamJson<T>(credentials: XtreamCredentialsInput, action?: string): Promise<T> {
