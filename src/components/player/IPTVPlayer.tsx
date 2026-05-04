@@ -750,6 +750,15 @@ export function IPTVPlayer() {
             return;
           } catch (retryError) {
             const retryDetail = retryError instanceof Error ? retryError.message : "Transmux retry failed";
+            const looksLikeProxy403 = /\b403\b|forbidden/i.test(retryDetail);
+            const directUrl = channel.xtream?.hlsUrl ?? channel.streamUrl;
+            if (looksLikeProxy403 && directUrl) {
+              const directAttempt = createAttempt(directUrl, "hlsjs", "Fallback directo navegador");
+              writeAttempt(directAttempt);
+              updateAttempt(directAttempt.id, "attempting");
+              playUrlByDetectedType(directUrl, "Fallback directo navegador");
+              return;
+            }
             failIfCurrent(createPlaybackError("stream_unreachable", { technicalDetail: retryDetail, diagnostics: createCurrentDiagnostics(video, containerRef.current, channel.streamUrl, retryDetail, attemptStateRef.current, channel) }));
           }
         });
