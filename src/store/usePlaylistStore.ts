@@ -8,6 +8,14 @@ import type { PlaylistLoadState } from "@/types/playlist";
 
 interface PlaylistStoreState extends PlaylistLoadState {
   groups: ChannelGroup[];
+  diagnostics?: {
+    method: "direct-browser" | "playlist-proxy";
+    status: "success" | "error";
+    fallbackUsed: boolean;
+    maskedUrl: string;
+    playlistSize: number;
+    parsedChannels: number;
+  };
   selectedChannel?: IPTVChannel;
   searchQuery: string;
   selectedCountry?: string;
@@ -23,6 +31,7 @@ interface PlaylistStoreState extends PlaylistLoadState {
 interface LoadChannelsResult {
   channels: IPTVChannel[];
   suggestedEpgUrls?: string[];
+  diagnostics?: PlaylistStoreState["diagnostics"];
 }
 
 interface PlaylistCacheEntry {
@@ -30,6 +39,7 @@ interface PlaylistCacheEntry {
   source: NonNullable<PlaylistStoreState["source"]>;
   channels: IPTVChannel[];
   groups: ChannelGroup[];
+  diagnostics?: PlaylistStoreState["diagnostics"];
   loadedAt: string;
 }
 
@@ -76,6 +86,7 @@ export const usePlaylistStore = create<PlaylistStoreState>((set, get) => ({
           source: cached.source,
           channels: cached.channels,
           groups: cached.groups,
+          diagnostics: cached.diagnostics,
           selectedCountry: firstCountry,
           selectedCategory: firstCategory,
           selectedChannel: undefined,
@@ -99,7 +110,7 @@ export const usePlaylistStore = create<PlaylistStoreState>((set, get) => ({
     });
 
     try {
-      const { channels, suggestedEpgUrls } = await loadChannelsForProfile(profile);
+      const { channels, suggestedEpgUrls, diagnostics } = await loadChannelsForProfile(profile);
       const groups = groupChannels(channels);
       const firstCountry = groups[0]?.country;
       const firstCategory = groups[0]?.categories[0]?.name;
@@ -116,12 +127,14 @@ export const usePlaylistStore = create<PlaylistStoreState>((set, get) => ({
         error: undefined,
         loadedAt,
         source: resolvedSource,
+        diagnostics,
       });
       playlistCache.set(profile.id, {
         profileId: profile.id,
         source: resolvedSource,
         channels,
         groups,
+        diagnostics,
         loadedAt,
       });
     } catch (error) {

@@ -99,6 +99,7 @@ function DesktopDashboard() {
   const selectedCountry = usePlaylistStore((state) => state.selectedCountry);
   const selectedCategory = usePlaylistStore((state) => state.selectedCategory);
   const searchQuery = usePlaylistStore((state) => state.searchQuery);
+  const playlistDiagnostics = usePlaylistStore((state) => state.diagnostics);
   const setSearchQuery = usePlaylistStore((state) => state.setSearchQuery);
   const selectChannel = usePlaylistStore((state) => state.selectChannel);
   const setPlayerChannel = usePlayerStore((state) => state.setChannel);
@@ -137,6 +138,15 @@ function DesktopDashboard() {
             </button>
           ))}
         </div>
+        {process.env.NODE_ENV === "development" && playlistDiagnostics ? (
+          <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.03] p-2 text-[11px] text-slate-300">
+            <p>M3U método: {playlistDiagnostics.method}</p>
+            <p>Fallback: {playlistDiagnostics.fallbackUsed ? "sí" : "no"}</p>
+            <p>URL: {playlistDiagnostics.maskedUrl}</p>
+            <p>Tamaño: {Math.round(playlistDiagnostics.playlistSize / 1024)} KB</p>
+            <p>Canales parseados: {playlistDiagnostics.parsedChannels}</p>
+          </div>
+        ) : null}
 
         <div className="max-h-[calc(100vh-18rem)] space-y-3 overflow-auto pr-1">
           {status === "loading" ? <LoadingState compact /> : null}
@@ -224,6 +234,7 @@ function MobileDashboard() {
   const selectedCountry = usePlaylistStore((state) => state.selectedCountry);
   const selectedCategory = usePlaylistStore((state) => state.selectedCategory);
   const searchQuery = usePlaylistStore((state) => state.searchQuery);
+  const playlistDiagnostics = usePlaylistStore((state) => state.diagnostics);
   const setSearchQuery = usePlaylistStore((state) => state.setSearchQuery);
   const selectChannel = usePlaylistStore((state) => state.selectChannel);
   const setPlayerChannel = usePlayerStore((state) => state.setChannel);
@@ -271,6 +282,15 @@ function MobileDashboard() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
           <input className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.07] pl-10 pr-4 text-sm outline-none" onChange={(event) => { setSearchQuery(event.target.value); setPanelMode("channels"); }} placeholder="Buscar canal" value={searchQuery} />
         </label>
+        {process.env.NODE_ENV === "development" && playlistDiagnostics ? (
+          <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.03] p-2 text-[11px] text-slate-300">
+            <p>M3U método: {playlistDiagnostics.method}</p>
+            <p>Fallback: {playlistDiagnostics.fallbackUsed ? "sí" : "no"}</p>
+            <p>URL: {playlistDiagnostics.maskedUrl}</p>
+            <p>Tamaño: {Math.round(playlistDiagnostics.playlistSize / 1024)} KB</p>
+            <p>Canales parseados: {playlistDiagnostics.parsedChannels}</p>
+          </div>
+        ) : null}
 
         <div className="max-h-[48vh] space-y-2 overflow-auto pr-1">
           {status === "loading" ? <LoadingState compact /> : null}
