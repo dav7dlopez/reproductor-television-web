@@ -111,18 +111,22 @@ function DesktopDashboard() {
   const setSelectedCategory = usePlaylistStore((state) => state.setSelectedCategory);
   const [panelMode, setPanelMode] = useState<LeftPanelMode>("channels");
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const favoriteEntries = useFavoritesStore((state) => state.getFavoritesForProfile(activeProfile?.id));
+  const favoritesByProfileId = useFavoritesStore((state) => state.byProfileId);
   const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
   const selectedGroup = groups.find((group) => group.country === selectedCountry) ?? groups[0];
   const filteredChannels = useMemo(() => filterChannels(channels, deferredSearchQuery, selectedCountry, selectedCategory), [channels, deferredSearchQuery, selectedCategory, selectedCountry]);
   const favoriteChannels = useMemo(() => {
-    if (!activeProfile?.id || favoriteEntries.length === 0) {
+    if (!activeProfile?.id) {
+      return [];
+    }
+    const favoriteEntries = favoritesByProfileId[activeProfile.id] ?? [];
+    if (favoriteEntries.length === 0) {
       return [];
     }
     const ids = new Set(favoriteEntries.map((item) => item.id));
     return filteredChannels.filter((channel) => ids.has(`${channel.id}:${channel.sourceIndex}`));
-  }, [activeProfile?.id, favoriteEntries, filteredChannels]);
+  }, [activeProfile, favoritesByProfileId, filteredChannels]);
   const channelsToRender = panelMode === "favorites" ? favoriteChannels : filteredChannels;
   const [visibleChannelsCount, setVisibleChannelsCount] = useProgressiveChannels();
   const visibleChannels = useMemo(() => channelsToRender.slice(0, visibleChannelsCount), [channelsToRender, visibleChannelsCount]);
@@ -276,19 +280,23 @@ function MobileDashboard() {
   const setSelectedCategory = usePlaylistStore((state) => state.setSelectedCategory);
   const [panelMode, setPanelMode] = useState<LeftPanelMode>("channels");
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const favoriteEntries = useFavoritesStore((state) => state.getFavoritesForProfile(activeProfile?.id));
+  const favoritesByProfileId = useFavoritesStore((state) => state.byProfileId);
   const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
   const selectedGroup = groups.find((group) => group.country === selectedCountry) ?? groups[0];
   const selectedCategoryGroup = selectedGroup?.categories.find((category) => category.name === selectedCategory) ?? selectedGroup?.categories[0];
   const filteredChannels = useMemo(() => filterChannels(channels, deferredSearchQuery, selectedCountry, selectedCategory), [channels, deferredSearchQuery, selectedCategory, selectedCountry]);
   const favoriteChannels = useMemo(() => {
-    if (!activeProfile?.id || favoriteEntries.length === 0) {
+    if (!activeProfile?.id) {
+      return [];
+    }
+    const favoriteEntries = favoritesByProfileId[activeProfile.id] ?? [];
+    if (favoriteEntries.length === 0) {
       return [];
     }
     const ids = new Set(favoriteEntries.map((item) => item.id));
     return filteredChannels.filter((channel) => ids.has(`${channel.id}:${channel.sourceIndex}`));
-  }, [activeProfile?.id, favoriteEntries, filteredChannels]);
+  }, [activeProfile, favoritesByProfileId, filteredChannels]);
   const channelsToRender = panelMode === "favorites" ? favoriteChannels : filteredChannels;
   const [visibleChannelsCount, setVisibleChannelsCount] = useProgressiveChannels();
   const visibleChannels = useMemo(() => channelsToRender.slice(0, visibleChannelsCount), [channelsToRender, visibleChannelsCount]);
