@@ -32,6 +32,7 @@ export function mapXtreamStreamsToChannels(credentials: XtreamCredentialsInput, 
       country: country.name,
       countryCode: country.code,
       category,
+      searchIndex: normalizeText([name, stream.epg_channel_id, groupTitle, category, country.name].filter(Boolean).join(" ")),
       sourceIndex: index,
       sourceType: "xtream",
       xtream: {

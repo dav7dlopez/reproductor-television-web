@@ -120,6 +120,7 @@ function createChannel(extInf: PendingExtInf, streamUrl: string, sourceIndex: nu
     country: country.name,
     countryCode: country.code,
     category,
+    searchIndex: normalizeText([name, tvgName, tvgId, groupTitle, category, country.name].filter(Boolean).join(" ")),
     sourceIndex,
     sourceType: "m3u",
   };

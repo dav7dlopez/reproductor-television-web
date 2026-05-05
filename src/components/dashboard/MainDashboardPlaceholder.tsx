@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type Dispatch, type SetStateAction, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Loader2, MonitorPlay, Search, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { EpgPanel } from "@/components/epg/EpgPanel";
@@ -16,6 +16,8 @@ import { usePlaylistStore } from "@/store/usePlaylistStore";
 import { useSessionStore } from "@/store/useSessionStore";
 import type { IPTVChannel } from "@/types/channel";
 type LeftPanelMode = "country" | "category" | "channels";
+const CHANNELS_INITIAL_BATCH = 120;
+const CHANNELS_BATCH_SIZE = 160;
 
 export function MainDashboardPlaceholder() {
   const activeProfile = useSessionStore((state) => state.activeProfile);
@@ -106,9 +108,12 @@ function DesktopDashboard() {
   const setSelectedCountry = usePlaylistStore((state) => state.setSelectedCountry);
   const setSelectedCategory = usePlaylistStore((state) => state.setSelectedCategory);
   const [panelMode, setPanelMode] = useState<LeftPanelMode>("channels");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const selectedGroup = groups.find((group) => group.country === selectedCountry) ?? groups[0];
-  const filteredChannels = useMemo(() => filterChannels(channels, searchQuery, selectedCountry, selectedCategory), [channels, searchQuery, selectedCategory, selectedCountry]);
+  const filteredChannels = useMemo(() => filterChannels(channels, deferredSearchQuery, selectedCountry, selectedCategory), [channels, deferredSearchQuery, selectedCategory, selectedCountry]);
+  const [visibleChannelsCount, setVisibleChannelsCount] = useProgressiveChannels();
+  const visibleChannels = useMemo(() => filteredChannels.slice(0, visibleChannelsCount), [filteredChannels, visibleChannelsCount]);
   const epgProgramsByChannelId = useEpgStore((state) => state.programsByChannelId);
   const epgMatches = useEpgStore((state) => state.matchesByChannelId);
   const epgStatus = useEpgStore((state) => state.status);
@@ -161,10 +166,13 @@ function DesktopDashboard() {
               {category.name} · {category.channels.length}
             </button>
           )) : null}
-          {status === "success" && panelMode === "channels" ? filteredChannels.map((channel, index) => (
+          {status === "success" && panelMode === "channels" ? visibleChannels.map((channel, index) => (
             <ChannelRow
               channel={channel}
               index={index}
+              epgMatches={epgMatches}
+              epgProgramsByChannelId={epgProgramsByChannelId}
+              epgStatus={epgStatus}
               isSelected={selectedChannel?.id === channel.id}
               key={`${channel.id}-${channel.sourceIndex}`}
               onSelect={() => {
@@ -179,6 +187,11 @@ function DesktopDashboard() {
               }}
             />
           )) : null}
+          {status === "success" && panelMode === "channels" && visibleChannelsCount < filteredChannels.length ? (
+            <button className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.08]" onClick={() => setVisibleChannelsCount((current) => Math.min(current + CHANNELS_BATCH_SIZE, filteredChannels.length))} type="button">
+              Cargar más canales ({filteredChannels.length - visibleChannelsCount} restantes)
+            </button>
+          ) : null}
           {status === "success" && !selectedGroup ? <EmptyState /> : null}
           {status === "success" && panelMode === "channels" && filteredChannels.length === 0 ? <EmptyState /> : null}
         </div>
@@ -241,11 +254,15 @@ function MobileDashboard() {
   const setSelectedCountry = usePlaylistStore((state) => state.setSelectedCountry);
   const setSelectedCategory = usePlaylistStore((state) => state.setSelectedCategory);
   const [panelMode, setPanelMode] = useState<LeftPanelMode>("channels");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const selectedGroup = groups.find((group) => group.country === selectedCountry) ?? groups[0];
   const selectedCategoryGroup = selectedGroup?.categories.find((category) => category.name === selectedCategory) ?? selectedGroup?.categories[0];
-  const filteredChannels = useMemo(() => filterChannels(channels, searchQuery, selectedCountry, selectedCategory), [channels, searchQuery, selectedCategory, selectedCountry]);
+  const filteredChannels = useMemo(() => filterChannels(channels, deferredSearchQuery, selectedCountry, selectedCategory), [channels, deferredSearchQuery, selectedCategory, selectedCountry]);
+  const [visibleChannelsCount, setVisibleChannelsCount] = useProgressiveChannels();
+  const visibleChannels = useMemo(() => filteredChannels.slice(0, visibleChannelsCount), [filteredChannels, visibleChannelsCount]);
   const epgMatches = useEpgStore((state) => state.matchesByChannelId);
+  const epgProgramsByChannelId = useEpgStore((state) => state.programsByChannelId);
   const epgStatus = useEpgStore((state) => state.status);
   const epgError = useEpgStore((state) => state.error);
 
@@ -305,10 +322,13 @@ function MobileDashboard() {
               {category.name} · {category.channels.length}
             </button>
           )) : null}
-          {status === "success" && panelMode === "channels" ? filteredChannels.map((channel, index) => (
+          {status === "success" && panelMode === "channels" ? visibleChannels.map((channel, index) => (
             <ChannelRow
               channel={channel}
               index={index}
+              epgMatches={epgMatches}
+              epgProgramsByChannelId={epgProgramsByChannelId}
+              epgStatus={epgStatus}
               isSelected={selectedChannel?.id === channel.id}
               key={`${channel.id}-${channel.sourceIndex}`}
               onSelect={() => {
@@ -323,6 +343,11 @@ function MobileDashboard() {
               }}
             />
           )) : null}
+          {status === "success" && panelMode === "channels" && visibleChannelsCount < filteredChannels.length ? (
+            <button className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.08]" onClick={() => setVisibleChannelsCount((current) => Math.min(current + CHANNELS_BATCH_SIZE, filteredChannels.length))} type="button">
+              Cargar más canales ({filteredChannels.length - visibleChannelsCount} restantes)
+            </button>
+          ) : null}
           {status === "success" && panelMode === "channels" && filteredChannels.length === 0 ? <EmptyState /> : null}
         </div>
       </GlassPanel>
@@ -342,10 +367,28 @@ function MobileDashboard() {
   );
 }
 
-function ChannelRow({ channel, index, isSelected, onSelect }: { channel: IPTVChannel; index: number; isSelected: boolean; onSelect: () => void }) {
-  const epgProgramsByChannelId = useEpgStore((state) => state.programsByChannelId);
-  const epgMatches = useEpgStore((state) => state.matchesByChannelId);
-  const epgStatus = useEpgStore((state) => state.status);
+function useProgressiveChannels(): [number, Dispatch<SetStateAction<number>>] {
+  const [visibleChannelsCount, setVisibleChannelsCount] = useState(CHANNELS_INITIAL_BATCH);
+  return [visibleChannelsCount, setVisibleChannelsCount];
+}
+
+function ChannelRow({
+  channel,
+  index,
+  isSelected,
+  onSelect,
+  epgProgramsByChannelId,
+  epgMatches,
+  epgStatus,
+}: {
+  channel: IPTVChannel;
+  index: number;
+  isSelected: boolean;
+  onSelect: () => void;
+  epgProgramsByChannelId: ReturnType<typeof useEpgStore.getState>["programsByChannelId"];
+  epgMatches: ReturnType<typeof useEpgStore.getState>["matchesByChannelId"];
+  epgStatus: ReturnType<typeof useEpgStore.getState>["status"];
+}) {
   const programs = getEpgProgramsForIptvChannel(channel.id, epgProgramsByChannelId, epgMatches);
   const nowProgram = getCurrentProgram(programs);
   return (

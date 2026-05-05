@@ -5,11 +5,13 @@ import type { ChannelEpgMatch, EpgChannel } from "@/types/epg";
 interface EpgChannelIndex {
   byId: Map<string, EpgChannel>;
   byNormalizedDisplayName: Map<string, EpgChannel[]>;
+  byFlexibleNormalizedName: Map<string, EpgChannel[]>;
 }
 
 export function buildEpgChannelIndex(epgChannels: EpgChannel[]): EpgChannelIndex {
   const byId = new Map<string, EpgChannel>();
   const byNormalizedDisplayName = new Map<string, EpgChannel[]>();
+  const byFlexibleNormalizedName = new Map<string, EpgChannel[]>();
 
   for (const channel of epgChannels) {
     byId.set(channel.id, channel);
@@ -18,10 +20,18 @@ export function buildEpgChannelIndex(epgChannels: EpgChannel[]): EpgChannelIndex
         byNormalizedDisplayName.set(normalizedName, []);
       }
       byNormalizedDisplayName.get(normalizedName)!.push(channel);
+
+      const flexible = normalizeFlexibleName(normalizedName);
+      if (flexible) {
+        if (!byFlexibleNormalizedName.has(flexible)) {
+          byFlexibleNormalizedName.set(flexible, []);
+        }
+        byFlexibleNormalizedName.get(flexible)!.push(channel);
+      }
     }
   }
 
-  return { byId, byNormalizedDisplayName };
+  return { byId, byNormalizedDisplayName, byFlexibleNormalizedName };
 }
 
 export function matchIptvChannelsToEpg(channels: IPTVChannel[], epgChannels: EpgChannel[]): Record<string, ChannelEpgMatch> {
@@ -57,9 +67,9 @@ function findBestMatch(channel: IPTVChannel, index: EpgChannelIndex): ChannelEpg
 
   const flexible = normalizeFlexibleName(channel.name);
   if (flexible) {
-    const matches = Array.from(index.byId.values()).filter((epgChannel) => epgChannel.normalizedNames.some((name) => normalizeFlexibleName(name) === flexible));
-    if (matches[0]) {
-      return { channelId: channel.id, epgChannelId: matches[0].id, method: "flex", confidence: 0.72 };
+    const flexMatch = index.byFlexibleNormalizedName.get(flexible)?.[0];
+    if (flexMatch) {
+      return { channelId: channel.id, epgChannelId: flexMatch.id, method: "flex", confidence: 0.72 };
     }
   }
 

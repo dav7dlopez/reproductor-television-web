@@ -100,10 +100,13 @@ export const useEpgStore = create<EpgStoreState>((set) => ({
       window.setTimeout(() => {
         useEpgStore.setState((state) => ({
           ...state,
-          matchesByChannelId: {
-            ...state.matchesByChannelId,
-            ...restMatches,
-          },
+          matchesByChannelId:
+            state.loadedAt === loadedAt && createSourceCacheKey(state.source) === cacheKey
+              ? {
+                  ...state.matchesByChannelId,
+                  ...restMatches,
+                }
+              : state.matchesByChannelId,
         }));
       }, 0);
 
@@ -138,6 +141,13 @@ export const useEpgStore = create<EpgStoreState>((set) => ({
   },
   reset: () => set(initialState),
 }));
+
+function createSourceCacheKey(source: EpgSource | undefined): string | undefined {
+  if (!source) {
+    return undefined;
+  }
+  return `${source.profileId}:${source.maskedUrl}:${source.proxied ? "proxy" : "direct"}`;
+}
 
 function buildProgramsIndex(programs: EpgProgram[]): Record<string, EpgProgram[]> {
   const map: Record<string, EpgProgram[]> = {};

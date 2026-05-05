@@ -27,6 +27,7 @@ export interface IPTVChannel {
   category: string;
   sourceIndex: number;
   sourceType?: ChannelSourceType;
+  searchIndex?: string;
   xtream?: XtreamChannelMeta;
 }
 

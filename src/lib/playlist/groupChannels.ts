@@ -52,9 +52,7 @@ export function filterChannels(channels: IPTVChannel[], query: string, country?:
 
   return channels.filter((channel) => {
     const matchesQuery = normalizedQuery
-      ? [channel.name, channel.tvgName, channel.tvgId, channel.groupTitle, channel.category, channel.country]
-          .filter(Boolean)
-          .some((value) => normalizeText(value).includes(normalizedQuery))
+      ? (channel.searchIndex ?? normalizeText([channel.name, channel.tvgName, channel.tvgId, channel.groupTitle, channel.category, channel.country].filter(Boolean).join(" "))).includes(normalizedQuery)
       : true;
     const matchesCountry = country ? channel.country === country : true;
     const matchesCategory = category ? channel.category === category : true;
