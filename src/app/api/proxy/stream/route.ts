@@ -295,9 +295,6 @@ function isLikelyMpegTs(url: URL, contentType: string): boolean {
 }
 
 function normalizeProfile(value: string | null): ProxyHeaderProfile {
-  if (process.env.NODE_ENV !== "development") {
-    return "default";
-  }
   if (!value) {
     return "default";
   }
