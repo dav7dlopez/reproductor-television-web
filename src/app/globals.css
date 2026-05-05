@@ -26,10 +26,13 @@
 html {
   min-height: 100%;
   background: var(--background);
+  overflow-x: hidden;
 }
 
 body {
   min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.18), transparent 28rem),
     radial-gradient(circle at 85% 20%, rgba(37, 99, 235, 0.18), transparent 24rem),

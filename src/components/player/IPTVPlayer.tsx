@@ -883,19 +883,26 @@ export function IPTVPlayer() {
 
   const requestFullscreen = useCallback(async () => {
     const container = containerRef.current;
+    const video = videoRef.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
 
-    if (!container?.requestFullscreen) {
+    try {
+      if (container?.requestFullscreen) {
+        await container.requestFullscreen();
+        return;
+      }
+
+      // iOS Safari fallback: this API is non-standard but still required on iPhone.
+      if (video?.webkitEnterFullscreen) {
+        video.webkitEnterFullscreen();
+        return;
+      }
+
       setError({
         code: "unknown",
         title: "Pantalla completa no disponible",
         message: "Este navegador o dispositivo no permite activar pantalla completa desde este reproductor.",
         recoverable: true,
       });
-      return;
-    }
-
-    try {
-      await container.requestFullscreen();
     } catch (fullscreenError) {
       const detail = fullscreenError instanceof Error ? fullscreenError.message : undefined;
       setError({
@@ -946,8 +953,8 @@ export function IPTVPlayer() {
   const isLoading = status === "loading";
 
   return (
-    <GlassPanel className="overflow-hidden p-3 sm:p-4" elevated>
-      <div ref={containerRef} className="group relative aspect-video overflow-hidden rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_50%_35%,rgba(56,189,248,0.24),transparent_30%),linear-gradient(135deg,#020617,#0f172a_55%,#082f49)] light:bg-[radial-gradient(circle_at_50%_35%,rgba(14,165,233,0.18),transparent_30%),linear-gradient(135deg,#e0f2fe,#f8fafc_60%,#dbeafe)]">
+    <GlassPanel className="w-full max-w-full overflow-hidden p-3 sm:p-4" elevated>
+      <div ref={containerRef} className="group relative aspect-video w-full max-w-full overflow-hidden rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_50%_35%,rgba(56,189,248,0.24),transparent_30%),linear-gradient(135deg,#020617,#0f172a_55%,#082f49)] light:bg-[radial-gradient(circle_at_50%_35%,rgba(14,165,233,0.18),transparent_30%),linear-gradient(135deg,#e0f2fe,#f8fafc_60%,#dbeafe)]">
         <video
           ref={videoRef}
           className="h-full w-full bg-black object-contain"

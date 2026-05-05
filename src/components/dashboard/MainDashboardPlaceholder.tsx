@@ -63,7 +63,7 @@ export function MainDashboardPlaceholder() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden px-3 py-3 text-white light:text-slate-950 sm:px-5 lg:px-6">
+    <main className="relative min-h-screen max-w-full overflow-x-hidden overflow-y-visible px-3 py-3 text-white light:text-slate-950 sm:px-5 lg:px-6">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute left-1/4 top-[-20%] h-[28rem] w-[28rem] rounded-full bg-sky-500/20 blur-3xl" />
         <div className="absolute right-[-12%] top-1/3 h-[32rem] w-[32rem] rounded-full bg-blue-700/20 blur-3xl" />
@@ -250,12 +250,12 @@ function MobileDashboard() {
   const epgError = useEpgStore((state) => state.error);
 
   return (
-    <section className="grid gap-4 lg:hidden">
-      <div className="sticky top-2 z-20">
+    <section className="grid min-w-0 max-w-full gap-4 lg:hidden">
+      <div className="sticky top-2 z-20 min-w-0 max-w-full">
         <IPTVPlayer />
       </div>
 
-      <GlassPanel className="p-3">
+      <GlassPanel className="min-w-0 max-w-full overflow-x-hidden p-3">
         <div className="mb-3 grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1 text-xs">
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "country" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("country")} type="button">País</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "category" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("category")} type="button">Categoría</button>
@@ -327,7 +327,7 @@ function MobileDashboard() {
         </div>
       </GlassPanel>
 
-      <GlassPanel className="p-3"><EpgPanel channel={selectedChannel} /></GlassPanel>
+      <GlassPanel className="min-w-0 max-w-full overflow-x-hidden p-3"><EpgPanel channel={selectedChannel} /></GlassPanel>
 
       <GlassPanel className="p-3">
         <div className="flex gap-3 text-xs text-cyan-100">
