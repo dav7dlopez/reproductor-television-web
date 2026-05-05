@@ -222,9 +222,9 @@ function DesktopDashboard() {
         </div>
       </GlassPanel>
 
-      <div className="grid gap-4">
+      <div className="grid min-w-0 gap-4">
         <IPTVPlayer />
-        <GlassPanel className="p-4" elevated><EpgPanel channel={selectedChannel} /></GlassPanel>
+        <GlassPanel className="min-w-0 overflow-hidden p-4" elevated><EpgPanel channel={selectedChannel} /></GlassPanel>
       </div>
 
       <GlassPanel className="p-4 lg:max-h-[calc(100vh-7.3rem)] lg:overflow-auto" elevated>
@@ -461,13 +461,13 @@ function ChannelRow({
         <div className="flex items-start gap-3">
           <ChannelLogo channel={channel} />
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="truncate font-semibold">{channel.name}</h3>
-              <div className="flex items-center gap-2">
-                <span className="shrink-0 text-xs text-slate-400">{nowProgram ? `${formatProgramTime(nowProgram.startMs)} - ${formatProgramTime(nowProgram.stopMs)}` : "--:--"}</span>
+            <div className="flex min-w-0 items-center gap-2">
+              <h3 className="min-w-0 flex-1 truncate font-semibold">{channel.name}</h3>
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <span className="max-w-[7.4rem] truncate text-[11px] text-slate-400 lg:max-w-[8.5rem] lg:text-xs">{nowProgram ? `${formatProgramTime(nowProgram.startMs)} - ${formatProgramTime(nowProgram.stopMs)}` : "--:--"}</span>
                 <button
                   aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${isFavorite ? "border-amber-300/60 bg-amber-300/20 text-amber-200" : "border-white/15 bg-white/5 text-slate-400 hover:bg-white/10"}`}
+                  className={`inline-flex h-8 w-8 shrink-0 flex-none items-center justify-center rounded-full border transition ${isFavorite ? "border-amber-300/60 bg-amber-300/20 text-amber-200" : "border-white/15 bg-white/5 text-slate-400 hover:bg-white/10"}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     onToggleFavorite();

@@ -7,8 +7,9 @@ import { getEpgProgramsForIptvChannel, useEpgStore } from "@/store/useEpgStore";
 import type { IPTVChannel } from "@/types/channel";
 
 export function EpgPanel({ channel }: { channel?: IPTVChannel }) {
-  const [offsetHours, setOffsetHours] = useState(0);
+  const [focusOffsetMinutes, setFocusOffsetMinutes] = useState(0);
   const [nowTick, setNowTick] = useState(() => Date.now());
+  const [selectedDateText, setSelectedDateText] = useState(() => new Date().toISOString().slice(0, 10));
   const status = useEpgStore((state) => state.status);
   const error = useEpgStore((state) => state.error);
   const source = useEpgStore((state) => state.source);
@@ -29,7 +30,21 @@ export function EpgPanel({ channel }: { channel?: IPTVChannel }) {
     return () => window.clearInterval(timer);
   }, []);
 
-  const current = getCurrentProgram(programs, nowTick + offsetHours * 60 * 60 * 1000);
+  const selectedDate = useMemo(() => {
+    const [year, month, day] = selectedDateText.split("-").map(Number);
+    if (!year || !month || !day) {
+      return new Date();
+    }
+    return new Date(year, month - 1, day);
+  }, [selectedDateText]);
+  const focusBaseMs = useMemo(() => {
+    const selected = new Date(selectedDate);
+    const now = new Date(nowTick);
+    selected.setHours(now.getHours(), now.getMinutes(), 0, 0);
+    return selected.getTime();
+  }, [nowTick, selectedDate]);
+  const focusMs = focusBaseMs + focusOffsetMinutes * 60 * 1000;
+  const current = getCurrentProgram(programs, focusMs);
   const currentMatch = channel ? matchesByChannelId[channel.id] : undefined;
   const matchedCount = Object.values(matchesByChannelId).filter((match) => match.method !== "none").length;
 
@@ -40,12 +55,21 @@ export function EpgPanel({ channel }: { channel?: IPTVChannel }) {
           <CalendarClock size={18} />
           <h3 className="font-semibold">EPG</h3>
         </div>
-        <EpgNavigation onNext={() => setOffsetHours((value) => value + 2)} onNow={() => setOffsetHours(0)} onPrevious={() => setOffsetHours((value) => value - 2)} />
+        <EpgNavigation
+          onDateChange={setSelectedDateText}
+          onNext={() => setFocusOffsetMinutes((value) => value + 60)}
+          onNow={() => {
+            setFocusOffsetMinutes(0);
+            setSelectedDateText(new Date().toISOString().slice(0, 10));
+          }}
+          onPrevious={() => setFocusOffsetMinutes((value) => value - 60)}
+          selectedDate={selectedDateText}
+        />
       </div>
       {!channel ? <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">Selecciona un canal para ver su EPG.</div> : null}
       {channel && status === "loading" ? <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">Cargando EPG...</div> : null}
       {channel && status === "error" ? <div className="rounded-2xl border border-rose-300/20 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div> : null}
-      {channel && status !== "loading" && status !== "error" ? <EpgTimeline offset={offsetHours} programs={programs} /> : null}
+      {channel && status !== "loading" && status !== "error" ? <EpgTimeline focusMs={focusMs} programs={programs} /> : null}
       {current ? <p className="mt-2 text-xs text-amber-200">Actual: {current.title}</p> : null}
       {process.env.NODE_ENV === "development" ? (
         <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-2 text-[11px] text-slate-300">

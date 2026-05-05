@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { matchIptvChannelsToEpg } from "@/lib/epg/epgMatcher";
 import { parseXMLTV } from "@/lib/epg/parseXMLTV";
 import { sortProgramsByDate } from "@/lib/epg/epgUtils";
-import { createProxyStreamUrl, maskStreamUrl } from "@/lib/player/playbackSupport";
+import { maskStreamUrl } from "@/lib/player/playbackSupport";
 import { buildXtreamXmltvUrl } from "@/lib/xtream/xtreamUrls";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import type { IPTVChannel } from "@/types/channel";
@@ -168,10 +168,9 @@ function buildProgramsIndex(programs: EpgProgram[]): Record<string, EpgProgram[]
 function resolveEpgSource(profile: IPTVProfile, playlistSource?: PlaylistSource): EpgSource | undefined {
   const manual = profile.epgUrl?.trim();
   const useExperimentalProxy = usePlayerStore.getState().useExperimentalProxy;
-  const proxyHeaderProfile = usePlayerStore.getState().proxyHeaderProfile;
 
   if (manual) {
-    const url = useExperimentalProxy ? createProxyStreamUrl(manual, proxyHeaderProfile) : manual;
+    const url = useExperimentalProxy ? createProxyPlaylistUrl(manual) : manual;
     return {
       profileId: profile.id,
       profileName: profile.name,
@@ -188,7 +187,7 @@ function resolveEpgSource(profile: IPTVProfile, playlistSource?: PlaylistSource)
     if (!hint) {
       return undefined;
     }
-    const url = useExperimentalProxy ? createProxyStreamUrl(hint, proxyHeaderProfile) : hint;
+    const url = useExperimentalProxy ? createProxyPlaylistUrl(hint) : hint;
     return {
       profileId: profile.id,
       profileName: profile.name,
@@ -202,7 +201,7 @@ function resolveEpgSource(profile: IPTVProfile, playlistSource?: PlaylistSource)
 
   if (profile.type === "xtream" && profile.xtream) {
     const xmltvUrl = buildXtreamXmltvUrl(profile.xtream);
-    const url = useExperimentalProxy ? createProxyStreamUrl(xmltvUrl, proxyHeaderProfile) : xmltvUrl;
+    const url = useExperimentalProxy ? createProxyPlaylistUrl(xmltvUrl) : xmltvUrl;
     return {
       profileId: profile.id,
       profileName: profile.name,
@@ -215,6 +214,10 @@ function resolveEpgSource(profile: IPTVProfile, playlistSource?: PlaylistSource)
   }
 
   return undefined;
+}
+
+function createProxyPlaylistUrl(url: string): string {
+  return `/api/proxy/playlist?url=${encodeURIComponent(url)}`;
 }
 
 async function fetchXmltv(url: string): Promise<string> {
