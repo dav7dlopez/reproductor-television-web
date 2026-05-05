@@ -10,9 +10,8 @@ interface PipButtonProps {
 
 export function PipButton({ className, isActive, onToggle }: PipButtonProps) {
   return (
-    <button aria-label="Picture-in-Picture" className={className} onClick={onToggle} type="button">
+    <button aria-label={isActive ? "Salir Picture-in-Picture" : "Picture-in-Picture"} className={className} onClick={onToggle} type="button">
       <PictureInPicture2 size={18} />
-      <span className="hidden sm:inline">{isActive ? "Salir PiP" : "PiP"}</span>
     </button>
   );
 }

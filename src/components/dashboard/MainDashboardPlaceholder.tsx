@@ -452,13 +452,17 @@ function ChannelRow({
               <h3 className="truncate font-semibold">{channel.name}</h3>
               <div className="flex items-center gap-2">
                 <span className="shrink-0 text-xs text-slate-400">{nowProgram ? `${formatProgramTime(nowProgram.startMs)} - ${formatProgramTime(nowProgram.stopMs)}` : "--:--"}</span>
-                <span
-                  aria-label={isFavorite ? "Canal favorito" : "Canal no favorito"}
-                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full border ${isFavorite ? "border-amber-300/60 bg-amber-300/20 text-amber-200" : "border-white/15 bg-white/5 text-slate-400"}`}
-                  role="img"
+                <button
+                  aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition ${isFavorite ? "border-amber-300/60 bg-amber-300/20 text-amber-200" : "border-white/15 bg-white/5 text-slate-400 hover:bg-white/10"}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleFavorite();
+                  }}
+                  type="button"
                 >
-                  <Star size={12} fill={isFavorite ? "currentColor" : "none"} />
-                </span>
+                  <Star size={14} fill={isFavorite ? "currentColor" : "none"} />
+                </button>
               </div>
             </div>
             <p className="truncate text-xs text-slate-400">{epgStatus === "loading" ? "Cargando EPG..." : nowProgram?.title ?? "Sin EPG"}</p>
@@ -467,15 +471,6 @@ function ChannelRow({
             </div>
           </div>
         </div>
-      </button>
-      <button
-        aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
-        className={`mt-2 inline-flex h-9 items-center justify-center gap-1 rounded-xl border px-3 text-xs font-semibold transition ${isFavorite ? "border-amber-300/40 bg-amber-300/15 text-amber-100" : "border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08]"}`}
-        onClick={onToggleFavorite}
-        type="button"
-      >
-        <Star size={13} fill={isFavorite ? "currentColor" : "none"} />
-        {isFavorite ? "Favorito" : "Fav"}
       </button>
     </motion.article>
   );

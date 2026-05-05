@@ -841,6 +841,28 @@ export function IPTVPlayer() {
     await playCurrentVideo(channel.streamUrl, generationRef.current);
   }, [channel, playCurrentVideo, setStatus, status]);
 
+  const stopPlayback = useCallback(async () => {
+    generationRef.current += 1;
+    clearLoadTimeout();
+    destroyHls();
+    destroyMpegTs();
+    await clearTransmuxSession();
+
+    const video = videoRef.current;
+    if (video) {
+      try {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      } catch {
+        // no-op
+      }
+    }
+
+    setError(undefined);
+    setStatus("idle");
+  }, [clearLoadTimeout, clearTransmuxSession, destroyHls, destroyMpegTs, setError, setStatus]);
+
   const toggleMute = useCallback(() => {
     const video = videoRef.current;
     if (!video) {
@@ -979,7 +1001,7 @@ export function IPTVPlayer() {
           strategy={strategyPreference}
         />
 
-        <PlayerControls channel={channel} onFullscreen={requestFullscreen} onPlayPause={togglePlayPause} onRetry={retry} onToggleMute={toggleMute} onTogglePiP={togglePiP} onVolumeChange={changeVolume} />
+        <PlayerControls channel={channel} onFullscreen={requestFullscreen} onPlayPause={togglePlayPause} onRetry={retry} onToggleMute={toggleMute} onTogglePiP={togglePiP} onVolumeChange={changeVolume} onStop={stopPlayback} />
       </div>
     </GlassPanel>
   );
