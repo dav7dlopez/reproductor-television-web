@@ -127,6 +127,7 @@ function DesktopDashboard() {
     const ids = new Set(favoriteEntries.map((item) => item.id));
     return filteredChannels.filter((channel) => ids.has(`${channel.id}:${channel.sourceIndex}`));
   }, [activeProfile, favoritesByProfileId, filteredChannels]);
+  const favoriteIdSet = useMemo(() => new Set(favoriteChannels.map((channel) => `${channel.id}:${channel.sourceIndex}`)), [favoriteChannels]);
   const channelsToRender = panelMode === "favorites" ? favoriteChannels : filteredChannels;
   const [visibleChannelsCount, setVisibleChannelsCount] = useProgressiveChannels();
   const visibleChannels = useMemo(() => channelsToRender.slice(0, visibleChannelsCount), [channelsToRender, visibleChannelsCount]);
@@ -143,10 +144,10 @@ function DesktopDashboard() {
     <section className="hidden gap-4 lg:grid lg:grid-cols-[330px_minmax(0,1fr)_340px] xl:grid-cols-[360px_minmax(0,1fr)_360px]">
       <GlassPanel className="p-4 lg:max-h-[calc(100vh-7.3rem)] lg:overflow-hidden" elevated>
         <div className="mb-3 grid grid-cols-4 gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1 text-sm">
+          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "favorites" ? "bg-amber-300/25 font-semibold text-amber-100" : "text-slate-400"}`} onClick={() => setPanelMode("favorites")} type="button">Favoritos</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "country" ? "bg-sky-300/25 font-semibold text-sky-100" : "text-slate-400"}`} onClick={() => setPanelMode("country")} type="button">País</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "category" ? "bg-sky-300/25 font-semibold text-sky-100" : "text-slate-400"}`} onClick={() => setPanelMode("category")} type="button">Categoría</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "channels" ? "bg-sky-300/25 font-semibold text-sky-100" : "text-slate-400"}`} onClick={() => setPanelMode("channels")} type="button">Canales</button>
-          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "favorites" ? "bg-amber-300/25 font-semibold text-amber-100" : "text-slate-400"}`} onClick={() => setPanelMode("favorites")} type="button">Favoritos</button>
         </div>
         <label className="relative mb-3 block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
@@ -187,7 +188,7 @@ function DesktopDashboard() {
             <ChannelRow
               channel={channel}
               index={index}
-              isFavorite={activeProfile?.id ? useFavoritesStore.getState().isFavorite(activeProfile.id, channel) : false}
+              isFavorite={favoriteIdSet.has(`${channel.id}:${channel.sourceIndex}`)}
               epgMatches={epgMatches}
               epgProgramsByChannelId={epgProgramsByChannelId}
               epgStatus={epgStatus}
@@ -297,6 +298,7 @@ function MobileDashboard() {
     const ids = new Set(favoriteEntries.map((item) => item.id));
     return filteredChannels.filter((channel) => ids.has(`${channel.id}:${channel.sourceIndex}`));
   }, [activeProfile, favoritesByProfileId, filteredChannels]);
+  const favoriteIdSet = useMemo(() => new Set(favoriteChannels.map((channel) => `${channel.id}:${channel.sourceIndex}`)), [favoriteChannels]);
   const channelsToRender = panelMode === "favorites" ? favoriteChannels : filteredChannels;
   const [visibleChannelsCount, setVisibleChannelsCount] = useProgressiveChannels();
   const visibleChannels = useMemo(() => channelsToRender.slice(0, visibleChannelsCount), [channelsToRender, visibleChannelsCount]);
@@ -313,10 +315,10 @@ function MobileDashboard() {
 
       <GlassPanel className="min-w-0 max-w-full overflow-x-hidden p-3">
         <div className="mb-3 grid grid-cols-4 gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1 text-xs">
+          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "favorites" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("favorites")} type="button">Fav</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "country" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("country")} type="button">País</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "category" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("category")} type="button">Categoría</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "channels" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("channels")} type="button">Canales</button>
-          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "favorites" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("favorites")} type="button">Fav</button>
         </div>
 
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
@@ -366,7 +368,7 @@ function MobileDashboard() {
             <ChannelRow
               channel={channel}
               index={index}
-              isFavorite={activeProfile?.id ? useFavoritesStore.getState().isFavorite(activeProfile.id, channel) : false}
+              isFavorite={favoriteIdSet.has(`${channel.id}:${channel.sourceIndex}`)}
               epgMatches={epgMatches}
               epgProgramsByChannelId={epgProgramsByChannelId}
               epgStatus={epgStatus}
@@ -444,7 +446,18 @@ function ChannelRow({
   const nowProgram = getCurrentProgram(programs);
   return (
     <motion.article animate={{ opacity: 1, y: 0 }} className={`rounded-2xl border p-3 transition ${isSelected ? "border-amber-300/60 bg-amber-300/10" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.08]"}`} initial={{ opacity: 0, y: 8 }} transition={{ delay: Math.min(index * 0.015, 0.2) }}>
-      <button className="w-full text-left" onClick={onSelect} type="button">
+      <div
+        className="w-full cursor-pointer text-left"
+        onClick={onSelect}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onSelect();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+      >
         <div className="flex items-start gap-3">
           <ChannelLogo channel={channel} />
           <div className="min-w-0 flex-1">
@@ -471,7 +484,7 @@ function ChannelRow({
             </div>
           </div>
         </div>
-      </button>
+      </div>
     </motion.article>
   );
 }
