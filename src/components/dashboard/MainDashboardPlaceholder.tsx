@@ -1,7 +1,7 @@
 "use client";
 
 import { type Dispatch, type SetStateAction, useDeferredValue, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Loader2, MonitorPlay, Search, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Loader2, MonitorPlay, Search, ShieldCheck, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { EpgPanel } from "@/components/epg/EpgPanel";
 import { getCurrentProgram, getProgramProgress, formatProgramTime } from "@/lib/epg/epgUtils";
@@ -11,11 +11,12 @@ import { GlassPanel } from "@/components/ui/GlassPanel";
 import { IPTVPlayer } from "@/components/player/IPTVPlayer";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { getEpgProgramsForIptvChannel, useEpgStore } from "@/store/useEpgStore";
+import { useFavoritesStore } from "@/store/useFavoritesStore";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import { usePlaylistStore } from "@/store/usePlaylistStore";
 import { useSessionStore } from "@/store/useSessionStore";
 import type { IPTVChannel } from "@/types/channel";
-type LeftPanelMode = "country" | "category" | "channels";
+type LeftPanelMode = "country" | "category" | "channels" | "favorites";
 const CHANNELS_INITIAL_BATCH = 120;
 const CHANNELS_BATCH_SIZE = 160;
 
@@ -93,6 +94,7 @@ export function MainDashboardPlaceholder() {
 }
 
 function DesktopDashboard() {
+  const activeProfile = useSessionStore((state) => state.activeProfile);
   const status = usePlaylistStore((state) => state.status);
   const error = usePlaylistStore((state) => state.error);
   const channels = usePlaylistStore((state) => state.channels);
@@ -109,11 +111,21 @@ function DesktopDashboard() {
   const setSelectedCategory = usePlaylistStore((state) => state.setSelectedCategory);
   const [panelMode, setPanelMode] = useState<LeftPanelMode>("channels");
   const deferredSearchQuery = useDeferredValue(searchQuery);
+  const favoriteEntries = useFavoritesStore((state) => state.getFavoritesForProfile(activeProfile?.id));
+  const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
   const selectedGroup = groups.find((group) => group.country === selectedCountry) ?? groups[0];
   const filteredChannels = useMemo(() => filterChannels(channels, deferredSearchQuery, selectedCountry, selectedCategory), [channels, deferredSearchQuery, selectedCategory, selectedCountry]);
+  const favoriteChannels = useMemo(() => {
+    if (!activeProfile?.id || favoriteEntries.length === 0) {
+      return [];
+    }
+    const ids = new Set(favoriteEntries.map((item) => item.id));
+    return filteredChannels.filter((channel) => ids.has(`${channel.id}:${channel.sourceIndex}`));
+  }, [activeProfile?.id, favoriteEntries, filteredChannels]);
+  const channelsToRender = panelMode === "favorites" ? favoriteChannels : filteredChannels;
   const [visibleChannelsCount, setVisibleChannelsCount] = useProgressiveChannels();
-  const visibleChannels = useMemo(() => filteredChannels.slice(0, visibleChannelsCount), [filteredChannels, visibleChannelsCount]);
+  const visibleChannels = useMemo(() => channelsToRender.slice(0, visibleChannelsCount), [channelsToRender, visibleChannelsCount]);
   const epgProgramsByChannelId = useEpgStore((state) => state.programsByChannelId);
   const epgMatches = useEpgStore((state) => state.matchesByChannelId);
   const epgStatus = useEpgStore((state) => state.status);
@@ -126,10 +138,11 @@ function DesktopDashboard() {
   return (
     <section className="hidden gap-4 lg:grid lg:grid-cols-[330px_minmax(0,1fr)_340px] xl:grid-cols-[360px_minmax(0,1fr)_360px]">
       <GlassPanel className="p-4 lg:max-h-[calc(100vh-7.3rem)] lg:overflow-hidden" elevated>
-        <div className="mb-3 grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1 text-sm">
+        <div className="mb-3 grid grid-cols-4 gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1 text-sm">
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "country" ? "bg-sky-300/25 font-semibold text-sky-100" : "text-slate-400"}`} onClick={() => setPanelMode("country")} type="button">País</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "category" ? "bg-sky-300/25 font-semibold text-sky-100" : "text-slate-400"}`} onClick={() => setPanelMode("category")} type="button">Categoría</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "channels" ? "bg-sky-300/25 font-semibold text-sky-100" : "text-slate-400"}`} onClick={() => setPanelMode("channels")} type="button">Canales</button>
+          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "favorites" ? "bg-amber-300/25 font-semibold text-amber-100" : "text-slate-400"}`} onClick={() => setPanelMode("favorites")} type="button">Favoritos</button>
         </div>
         <label className="relative mb-3 block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
@@ -166,13 +179,19 @@ function DesktopDashboard() {
               {category.name} · {category.channels.length}
             </button>
           )) : null}
-          {status === "success" && panelMode === "channels" ? visibleChannels.map((channel, index) => (
+          {status === "success" && (panelMode === "channels" || panelMode === "favorites") ? visibleChannels.map((channel, index) => (
             <ChannelRow
               channel={channel}
               index={index}
+              isFavorite={activeProfile?.id ? useFavoritesStore.getState().isFavorite(activeProfile.id, channel) : false}
               epgMatches={epgMatches}
               epgProgramsByChannelId={epgProgramsByChannelId}
               epgStatus={epgStatus}
+              onToggleFavorite={() => {
+                if (activeProfile?.id) {
+                  toggleFavorite(activeProfile.id, channel);
+                }
+              }}
               isSelected={selectedChannel?.id === channel.id}
               key={`${channel.id}-${channel.sourceIndex}`}
               onSelect={() => {
@@ -187,13 +206,14 @@ function DesktopDashboard() {
               }}
             />
           )) : null}
-          {status === "success" && panelMode === "channels" && visibleChannelsCount < filteredChannels.length ? (
-            <button className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.08]" onClick={() => setVisibleChannelsCount((current) => Math.min(current + CHANNELS_BATCH_SIZE, filteredChannels.length))} type="button">
-              Cargar más canales ({filteredChannels.length - visibleChannelsCount} restantes)
+          {status === "success" && (panelMode === "channels" || panelMode === "favorites") && visibleChannelsCount < channelsToRender.length ? (
+            <button className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.08]" onClick={() => setVisibleChannelsCount((current) => Math.min(current + CHANNELS_BATCH_SIZE, channelsToRender.length))} type="button">
+              Cargar más canales ({channelsToRender.length - visibleChannelsCount} restantes)
             </button>
           ) : null}
           {status === "success" && !selectedGroup ? <EmptyState /> : null}
           {status === "success" && panelMode === "channels" && filteredChannels.length === 0 ? <EmptyState /> : null}
+          {status === "success" && panelMode === "favorites" && favoriteChannels.length === 0 ? <EmptyFavoritesState /> : null}
         </div>
       </GlassPanel>
 
@@ -239,6 +259,7 @@ function DesktopDashboard() {
 }
 
 function MobileDashboard() {
+  const activeProfile = useSessionStore((state) => state.activeProfile);
   const status = usePlaylistStore((state) => state.status);
   const error = usePlaylistStore((state) => state.error);
   const channels = usePlaylistStore((state) => state.channels);
@@ -255,12 +276,22 @@ function MobileDashboard() {
   const setSelectedCategory = usePlaylistStore((state) => state.setSelectedCategory);
   const [panelMode, setPanelMode] = useState<LeftPanelMode>("channels");
   const deferredSearchQuery = useDeferredValue(searchQuery);
+  const favoriteEntries = useFavoritesStore((state) => state.getFavoritesForProfile(activeProfile?.id));
+  const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
 
   const selectedGroup = groups.find((group) => group.country === selectedCountry) ?? groups[0];
   const selectedCategoryGroup = selectedGroup?.categories.find((category) => category.name === selectedCategory) ?? selectedGroup?.categories[0];
   const filteredChannels = useMemo(() => filterChannels(channels, deferredSearchQuery, selectedCountry, selectedCategory), [channels, deferredSearchQuery, selectedCategory, selectedCountry]);
+  const favoriteChannels = useMemo(() => {
+    if (!activeProfile?.id || favoriteEntries.length === 0) {
+      return [];
+    }
+    const ids = new Set(favoriteEntries.map((item) => item.id));
+    return filteredChannels.filter((channel) => ids.has(`${channel.id}:${channel.sourceIndex}`));
+  }, [activeProfile?.id, favoriteEntries, filteredChannels]);
+  const channelsToRender = panelMode === "favorites" ? favoriteChannels : filteredChannels;
   const [visibleChannelsCount, setVisibleChannelsCount] = useProgressiveChannels();
-  const visibleChannels = useMemo(() => filteredChannels.slice(0, visibleChannelsCount), [filteredChannels, visibleChannelsCount]);
+  const visibleChannels = useMemo(() => channelsToRender.slice(0, visibleChannelsCount), [channelsToRender, visibleChannelsCount]);
   const epgMatches = useEpgStore((state) => state.matchesByChannelId);
   const epgProgramsByChannelId = useEpgStore((state) => state.programsByChannelId);
   const epgStatus = useEpgStore((state) => state.status);
@@ -273,10 +304,11 @@ function MobileDashboard() {
       </div>
 
       <GlassPanel className="min-w-0 max-w-full overflow-x-hidden p-3">
-        <div className="mb-3 grid grid-cols-3 gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1 text-xs">
+        <div className="mb-3 grid grid-cols-4 gap-2 rounded-2xl border border-white/10 bg-white/[0.04] p-1 text-xs">
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "country" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("country")} type="button">País</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "category" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("category")} type="button">Categoría</button>
           <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "channels" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("channels")} type="button">Canales</button>
+          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "favorites" ? "bg-amber-300/20 font-semibold text-amber-200" : "text-slate-400"}`} onClick={() => setPanelMode("favorites")} type="button">Fav</button>
         </div>
 
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
@@ -322,13 +354,19 @@ function MobileDashboard() {
               {category.name} · {category.channels.length}
             </button>
           )) : null}
-          {status === "success" && panelMode === "channels" ? visibleChannels.map((channel, index) => (
+          {status === "success" && (panelMode === "channels" || panelMode === "favorites") ? visibleChannels.map((channel, index) => (
             <ChannelRow
               channel={channel}
               index={index}
+              isFavorite={activeProfile?.id ? useFavoritesStore.getState().isFavorite(activeProfile.id, channel) : false}
               epgMatches={epgMatches}
               epgProgramsByChannelId={epgProgramsByChannelId}
               epgStatus={epgStatus}
+              onToggleFavorite={() => {
+                if (activeProfile?.id) {
+                  toggleFavorite(activeProfile.id, channel);
+                }
+              }}
               isSelected={selectedChannel?.id === channel.id}
               key={`${channel.id}-${channel.sourceIndex}`}
               onSelect={() => {
@@ -343,12 +381,13 @@ function MobileDashboard() {
               }}
             />
           )) : null}
-          {status === "success" && panelMode === "channels" && visibleChannelsCount < filteredChannels.length ? (
-            <button className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.08]" onClick={() => setVisibleChannelsCount((current) => Math.min(current + CHANNELS_BATCH_SIZE, filteredChannels.length))} type="button">
-              Cargar más canales ({filteredChannels.length - visibleChannelsCount} restantes)
+          {status === "success" && (panelMode === "channels" || panelMode === "favorites") && visibleChannelsCount < channelsToRender.length ? (
+            <button className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.08]" onClick={() => setVisibleChannelsCount((current) => Math.min(current + CHANNELS_BATCH_SIZE, channelsToRender.length))} type="button">
+              Cargar más canales ({channelsToRender.length - visibleChannelsCount} restantes)
             </button>
           ) : null}
           {status === "success" && panelMode === "channels" && filteredChannels.length === 0 ? <EmptyState /> : null}
+          {status === "success" && panelMode === "favorites" && favoriteChannels.length === 0 ? <EmptyFavoritesState /> : null}
         </div>
       </GlassPanel>
 
@@ -376,7 +415,9 @@ function ChannelRow({
   channel,
   index,
   isSelected,
+  isFavorite,
   onSelect,
+  onToggleFavorite,
   epgProgramsByChannelId,
   epgMatches,
   epgStatus,
@@ -384,7 +425,9 @@ function ChannelRow({
   channel: IPTVChannel;
   index: number;
   isSelected: boolean;
+  isFavorite: boolean;
   onSelect: () => void;
+  onToggleFavorite: () => void;
   epgProgramsByChannelId: ReturnType<typeof useEpgStore.getState>["programsByChannelId"];
   epgMatches: ReturnType<typeof useEpgStore.getState>["matchesByChannelId"];
   epgStatus: ReturnType<typeof useEpgStore.getState>["status"];
@@ -399,7 +442,16 @@ function ChannelRow({
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <h3 className="truncate font-semibold">{channel.name}</h3>
-              <span className="shrink-0 text-xs text-slate-400">{nowProgram ? `${formatProgramTime(nowProgram.startMs)} - ${formatProgramTime(nowProgram.stopMs)}` : "--:--"}</span>
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 text-xs text-slate-400">{nowProgram ? `${formatProgramTime(nowProgram.startMs)} - ${formatProgramTime(nowProgram.stopMs)}` : "--:--"}</span>
+                <span
+                  aria-label={isFavorite ? "Canal favorito" : "Canal no favorito"}
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full border ${isFavorite ? "border-amber-300/60 bg-amber-300/20 text-amber-200" : "border-white/15 bg-white/5 text-slate-400"}`}
+                  role="img"
+                >
+                  <Star size={12} fill={isFavorite ? "currentColor" : "none"} />
+                </span>
+              </div>
             </div>
             <p className="truncate text-xs text-slate-400">{epgStatus === "loading" ? "Cargando EPG..." : nowProgram?.title ?? "Sin EPG"}</p>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -407,6 +459,15 @@ function ChannelRow({
             </div>
           </div>
         </div>
+      </button>
+      <button
+        aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+        className={`mt-2 inline-flex h-9 items-center justify-center gap-1 rounded-xl border px-3 text-xs font-semibold transition ${isFavorite ? "border-amber-300/40 bg-amber-300/15 text-amber-100" : "border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.08]"}`}
+        onClick={onToggleFavorite}
+        type="button"
+      >
+        <Star size={13} fill={isFavorite ? "currentColor" : "none"} />
+        {isFavorite ? "Favorito" : "Fav"}
       </button>
     </motion.article>
   );
@@ -460,6 +521,15 @@ function EmptyState() {
     <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center">
       <h3 className="text-xl font-semibold">Sin canales para estos filtros</h3>
       <p className="mt-2 text-sm text-slate-400">Prueba con otro país, categoría o búsqueda.</p>
+    </div>
+  );
+}
+
+function EmptyFavoritesState() {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center">
+      <h3 className="text-xl font-semibold">Sin favoritos</h3>
+      <p className="mt-2 text-sm text-slate-400">Marca canales con la estrella para tenerlos aquí.</p>
     </div>
   );
 }
