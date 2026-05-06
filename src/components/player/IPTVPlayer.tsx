@@ -976,10 +976,10 @@ export function IPTVPlayer() {
 
   return (
     <GlassPanel className="w-full max-w-full overflow-hidden p-3 sm:p-4" elevated>
-      <div ref={containerRef} className="group relative aspect-video w-full max-w-full overflow-hidden rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_50%_35%,rgba(56,189,248,0.24),transparent_30%),linear-gradient(135deg,#020617,#0f172a_55%,#082f49)] light:bg-[radial-gradient(circle_at_50%_35%,rgba(14,165,233,0.18),transparent_30%),linear-gradient(135deg,#e0f2fe,#f8fafc_60%,#dbeafe)]">
+      <div ref={containerRef} className="group relative aspect-video w-full max-w-full overflow-hidden rounded-[1.6rem] border border-white/10 bg-[radial-gradient(circle_at_50%_35%,rgba(56,189,248,0.24),transparent_30%),linear-gradient(135deg,#020617,#0f172a_55%,#082f49)] light:bg-[radial-gradient(circle_at_50%_30%,rgba(56,189,248,0.16),transparent_34%),linear-gradient(140deg,#f4f9ff,#eef5ff_62%,#ddeafe)]">
         <video
           ref={videoRef}
-          className="h-full w-full bg-black object-contain"
+          className="h-full w-full bg-black object-contain light:bg-transparent"
           controls={false}
           muted={muted}
           playsInline
@@ -1009,13 +1009,13 @@ export function IPTVPlayer() {
 
 function EmptyPlayerState() {
   return (
-    <div className="absolute inset-0 grid place-items-center p-5 text-center">
-      <div>
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl border border-sky-300/20 bg-sky-300/12 text-sky-100 light:text-sky-800">
+    <div className="absolute inset-x-0 top-0 bottom-20 flex items-center justify-center px-5 pt-5 text-center sm:bottom-24 sm:px-6">
+      <div className="-translate-y-2 sm:-translate-y-3">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-3xl border border-sky-300/25 bg-sky-300/12 text-sky-100 shadow-[0_10px_30px_rgba(14,165,233,0.2)] light:border-sky-400/35 light:bg-white/72 light:text-sky-700 sm:h-16 sm:w-16">
           <MonitorPlay size={28} />
         </div>
-        <h2 className="mt-5 text-2xl font-semibold sm:text-4xl">Selecciona un canal para empezar</h2>
-        <p className="mx-auto mt-3 max-w-md text-sm text-slate-300 light:text-slate-600">El reproductor usará HTML5 video, HLS nativo si está disponible, hls.js cuando haga falta y compatibilidad MPEG-TS experimental.</p>
+        <h2 className="mt-3 text-[clamp(1.7rem,4.8vw,3.3rem)] font-semibold leading-tight text-slate-100 light:text-slate-900">Selecciona un canal para empezar</h2>
+        <p className="mx-auto mt-2 max-w-md text-xs text-slate-300 light:text-slate-700 sm:text-sm">Pulsa cualquier canal del listado para comenzar la reproducción.</p>
       </div>
     </div>
   );

@@ -56,12 +56,12 @@ export function PlaylistAccessScreen() {
 
       <header className="mx-auto flex max-w-7xl items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl border border-sky-300/25 bg-sky-300/15 shadow-[0_18px_55px_rgba(56,189,248,0.18)] backdrop-blur-xl">
+          <div className="glass-card grid h-11 w-11 place-items-center rounded-2xl">
             <MonitorPlay size={20} />
           </div>
           <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-sky-200 light:text-sky-700">David TV</p>
-            <p className="text-xs text-slate-400 light:text-slate-500">Disfruta desde donde quieras.</p>
+            <p className="text-sm uppercase tracking-[0.3em] text-sky-200 light:text-sky-800">David TV</p>
+            <p className="glass-muted text-xs">Disfruta desde donde quieras.</p>
           </div>
         </div>
         <ThemeToggle />
@@ -105,9 +105,9 @@ export function PlaylistAccessScreen() {
           />
         </motion.div>
 
-        <motion.div animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-white/10 bg-white/[0.04] p-3 backdrop-blur-xl light:border-slate-300/70 light:bg-white/70" initial={{ opacity: 0, y: 16 }} transition={{ delay: 0.05, duration: 0.35 }}>
+        <motion.div animate={{ opacity: 1, y: 0 }} className="glass-panel rounded-3xl p-3" initial={{ opacity: 0, y: 16 }} transition={{ delay: 0.05, duration: 0.35 }}>
           <button
-            className="inline-flex h-11 items-center gap-2 rounded-xl border border-sky-300/30 bg-sky-300/10 px-4 text-sm font-semibold text-sky-100 transition hover:bg-sky-300/20 light:text-sky-800"
+            className="glass-button inline-flex h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold"
             onClick={() => {
               if (editingProfileId) {
                 setEditingProfileId(undefined);

@@ -66,13 +66,13 @@ export function EpgPanel({ channel }: { channel?: IPTVChannel }) {
           selectedDate={selectedDateText}
         />
       </div>
-      {!channel ? <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">Selecciona un canal para ver su EPG.</div> : null}
-      {channel && status === "loading" ? <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">Cargando EPG...</div> : null}
+      {!channel ? <div className="glass-card rounded-2xl p-4 text-sm text-slate-400 light:text-slate-700">Selecciona un canal para ver su EPG.</div> : null}
+      {channel && status === "loading" ? <div className="glass-card rounded-2xl p-4 text-sm text-slate-400 light:text-slate-700">Cargando EPG...</div> : null}
       {channel && status === "error" ? <div className="rounded-2xl border border-rose-300/20 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div> : null}
       {channel && status !== "loading" && status !== "error" ? <EpgTimeline focusMs={focusMs} programs={programs} /> : null}
       {current ? <p className="mt-2 text-xs text-amber-200">Actual: {current.title}</p> : null}
       {process.env.NODE_ENV === "development" ? (
-        <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-2 text-[11px] text-slate-300">
+        <div className="glass-surface mt-3 rounded-xl p-2 text-[11px] text-slate-300 light:text-slate-700">
           <p>EPG URL: {source?.maskedUrl ?? "no configurada"}</p>
           <p>Estado: {status}</p>
           <p>Canales EPG: {epgChannels.length}</p>

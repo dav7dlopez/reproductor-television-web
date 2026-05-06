@@ -121,12 +121,12 @@ export function AccessForms({ onAccess, editingProfile, onCancelEdit }: AccessFo
 
   return (
     <GlassPanel className="overflow-hidden p-4 sm:p-6" elevated>
-      <div className="grid grid-cols-2 gap-2 rounded-3xl border border-white/10 bg-slate-950/40 p-1 light:bg-slate-100/80">
+      <div className="glass-surface grid grid-cols-2 gap-2 rounded-3xl p-1">
         <button
           className={`flex items-center justify-center gap-2 rounded-[1.35rem] px-3 py-3 text-sm font-semibold transition ${
             activeType === "m3u"
               ? "bg-sky-300 text-slate-950 shadow-[0_12px_40px_rgba(56,189,248,0.28)]"
-              : "text-slate-400 hover:text-white light:text-slate-500 light:hover:text-slate-950"
+              : "text-slate-300 hover:text-white light:text-slate-700 light:hover:text-slate-950"
           }`}
           onClick={() => setActiveType("m3u")}
           type="button"
@@ -137,7 +137,7 @@ export function AccessForms({ onAccess, editingProfile, onCancelEdit }: AccessFo
           className={`flex items-center justify-center gap-2 rounded-[1.35rem] px-3 py-3 text-sm font-semibold transition ${
             activeType === "xtream"
               ? "bg-sky-300 text-slate-950 shadow-[0_12px_40px_rgba(56,189,248,0.28)]"
-              : "text-slate-400 hover:text-white light:text-slate-500 light:hover:text-slate-950"
+              : "text-slate-300 hover:text-white light:text-slate-700 light:hover:text-slate-950"
           }`}
           onClick={() => setActiveType("xtream")}
           type="button"
@@ -174,7 +174,7 @@ export function AccessForms({ onAccess, editingProfile, onCancelEdit }: AccessFo
         </form>
       )}
 
-      <div className="mt-5 flex gap-3 rounded-3xl border border-sky-300/15 bg-sky-300/10 p-4 text-sm text-cyan-50 light:bg-sky-50 light:text-sky-900">
+      <div className="glass-card mt-5 flex gap-3 rounded-3xl p-4 text-sm text-cyan-50 light:text-sky-900">
         <ShieldCheck className="mt-0.5 shrink-0" size={18} />
         <p>Los perfiles se guardan solo en este dispositivo. Las credenciales no se envían a ningún servidor propio.</p>
       </div>
@@ -184,7 +184,7 @@ export function AccessForms({ onAccess, editingProfile, onCancelEdit }: AccessFo
 
 function SaveCheckbox({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
   return (
-    <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm text-slate-200 light:border-slate-300/70 light:bg-white/70 light:text-slate-700">
+    <label className="glass-surface flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-slate-200 light:text-slate-700">
       <input checked={checked} className="h-4 w-4 accent-sky-300" onChange={(event) => onChange(event.target.checked)} type="checkbox" />
       Guardar este perfil en este dispositivo
     </label>

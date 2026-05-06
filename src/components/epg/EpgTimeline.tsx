@@ -92,14 +92,14 @@ export function EpgTimeline({ programs, focusMs }: EpgTimelineProps) {
   const timelineWidthPx = Math.max(760, minutesInWindow * 3.2);
 
   if (sortedPrograms.length === 0) {
-    return <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-400">Sin programación disponible.</div>;
+    return <div className="glass-card rounded-2xl p-4 text-sm text-slate-400 light:text-slate-700">Sin programación disponible.</div>;
   }
 
   return (
     <div className="min-w-0 space-y-3">
-      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/35 p-3">
+      <div className="glass-card overflow-x-auto rounded-2xl p-3">
         <div className="min-w-full" style={{ width: `max(100%, ${timelineWidthPx}px)` }}>
-          <div className="mb-2 grid grid-cols-9 gap-2 px-1 text-[11px] text-slate-400">
+          <div className="mb-2 grid grid-cols-9 gap-2 px-1 text-[11px] text-slate-300 light:text-slate-700">
             {ticks.map((tick) => (
               <span className="text-center" key={tick.ms}>{formatHourLabel(tick.ms)}</span>
             ))}
@@ -115,7 +115,7 @@ export function EpgTimeline({ programs, focusMs }: EpgTimelineProps) {
           ))}
 
           {showNowLine ? (
-            <span className="absolute inset-y-0 z-20 w-[2px] bg-amber-300/90 shadow-[0_0_14px_rgba(251,191,36,0.65)]" style={{ left: `${nowLinePct}%` }} />
+            <span className="absolute inset-y-0 z-20 w-[2px] bg-cyan-300/90 shadow-[0_0_14px_rgba(56,189,248,0.55)]" style={{ left: `${nowLinePct}%` }} />
           ) : null}
 
           {segments.map((segment) => {
@@ -127,12 +127,12 @@ export function EpgTimeline({ programs, focusMs }: EpgTimelineProps) {
 
             return (
               <article
-                className={`absolute top-2 h-20 overflow-hidden rounded-xl border px-2 py-1 ${
+                className={`glass-timeline-card absolute top-2 h-20 overflow-hidden rounded-xl border px-2 py-1 ${
                   !program
-                    ? "border-slate-700/25 bg-slate-900/25 text-slate-400"
+                    ? "text-slate-400 light:text-slate-600"
                     : isCurrent
-                      ? "border-amber-300/65 bg-amber-300/16 text-amber-100"
-                      : "border-slate-500/35 bg-slate-900/45 text-slate-100"
+                      ? "border-cyan-300/70 bg-cyan-300/14 text-cyan-100 light:text-slate-900"
+                      : "text-slate-100 light:text-slate-800"
                 }`}
                 key={segment.id}
                 style={{ left: `${startPct}%`, width: `${widthPct}%` }}
@@ -140,14 +140,14 @@ export function EpgTimeline({ programs, focusMs }: EpgTimelineProps) {
                 {program ? (
                   <>
                     <p className="line-clamp-2 text-[12px] font-semibold leading-4">{program.title}</p>
-                    <p className="mt-1 text-[11px] text-slate-300">{formatProgramTime(program.startMs)} - {formatProgramTime(program.stopMs)}</p>
+                    <p className="mt-1 text-[11px] text-slate-300 light:text-slate-700">{formatProgramTime(program.startMs)} - {formatProgramTime(program.stopMs)}</p>
                   </>
                 ) : (
-                  <p className="pt-5 text-center text-[11px] text-slate-500">Sin emisión</p>
+                  <p className="pt-5 text-center text-[11px] text-slate-500 light:text-slate-600">Sin emisión</p>
                 )}
                 {program && isCurrent ? (
                   <div className="mt-2 h-1.5 rounded-full bg-white/12">
-                    <div className="h-full rounded-full bg-amber-300" style={{ width: `${Math.round(getProgramProgress(program, nowTick) * 100)}%` }} />
+                    <div className="h-full rounded-full bg-cyan-300" style={{ width: `${Math.round(getProgramProgress(program, nowTick) * 100)}%` }} />
                   </div>
                 ) : null}
               </article>

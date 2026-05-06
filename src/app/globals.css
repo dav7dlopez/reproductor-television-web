@@ -5,11 +5,39 @@
 :root {
   --background: #020617;
   --foreground: #f8fafc;
+  --surface-1: rgba(15, 23, 42, 0.5);
+  --surface-2: rgba(30, 41, 59, 0.44);
+  --surface-3: rgba(51, 65, 85, 0.3);
+  --surface-strong: rgba(15, 23, 42, 0.68);
+  --text-primary: #e2e8f0;
+  --text-secondary: #a8b6cc;
+  --text-muted: #8da2bf;
+  --border-soft: rgba(148, 163, 184, 0.22);
+  --border-strong: rgba(125, 211, 252, 0.34);
+  --accent: #7dd3fc;
+  --accent-strong: #38bdf8;
+  --shadow-soft: 0 18px 55px rgba(2, 8, 23, 0.34);
+  --shadow-glow: 0 30px 90px rgba(14, 165, 233, 0.17);
+  --glass-blur: blur(22px) saturate(145%);
 }
 
 [data-theme="light"] {
-  --background: #eaf6ff;
+  --background: #eef5ff;
   --foreground: #0f172a;
+  --surface-1: rgba(255, 255, 255, 0.72);
+  --surface-2: rgba(245, 251, 255, 0.8);
+  --surface-3: rgba(225, 236, 249, 0.55);
+  --surface-strong: rgba(255, 255, 255, 0.9);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #51627a;
+  --border-soft: rgba(140, 166, 198, 0.35);
+  --border-strong: rgba(56, 189, 248, 0.44);
+  --accent: #0284c7;
+  --accent-strong: #0369a1;
+  --shadow-soft: 0 16px 42px rgba(15, 23, 42, 0.12);
+  --shadow-glow: 0 20px 54px rgba(56, 189, 248, 0.14);
+  --glass-blur: blur(20px) saturate(135%);
 }
 
 @theme inline {
@@ -43,9 +71,9 @@ body {
 
 [data-theme="light"] body {
   background:
-    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.22), transparent 28rem),
-    radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.18), transparent 24rem),
-    linear-gradient(135deg, #e0f2fe 0%, #f8fafc 48%, #dbeafe 100%);
+    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.2), transparent 30rem),
+    radial-gradient(circle at 85% 20%, rgba(99, 102, 241, 0.14), transparent 28rem),
+    linear-gradient(135deg, #edf6ff 0%, #f9fbff 48%, #e4efff 100%);
 }
 
 h1,
@@ -63,4 +91,175 @@ input {
 
 ::selection {
   background: rgba(56, 189, 248, 0.35);
+}
+
+.glass-panel {
+  border-radius: 2rem;
+  border: 1px solid var(--border-soft);
+  background: linear-gradient(140deg, color-mix(in oklab, var(--surface-1) 90%, transparent), color-mix(in oklab, var(--surface-2) 88%, transparent));
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: var(--glass-blur);
+}
+
+.glass-card {
+  border-radius: 1.35rem;
+  border: 1px solid var(--border-soft);
+  background: linear-gradient(145deg, color-mix(in oklab, var(--surface-2) 82%, transparent), color-mix(in oklab, var(--surface-3) 78%, transparent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(16px) saturate(125%);
+}
+
+.glass-card-strong {
+  border-radius: 1.35rem;
+  border: 1px solid color-mix(in oklab, var(--border-strong) 78%, var(--border-soft));
+  background: linear-gradient(
+    155deg,
+    color-mix(in oklab, var(--surface-strong) 84%, transparent),
+    color-mix(in oklab, var(--surface-2) 82%, transparent)
+  );
+  box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(18px) saturate(135%);
+}
+
+.glass-surface {
+  border-radius: 1rem;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in oklab, var(--surface-2) 80%, transparent);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+.glass-nav {
+  border-radius: 1.1rem;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in oklab, var(--surface-2) 80%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in oklab, var(--surface-2) 72%, transparent);
+  color: var(--text-secondary);
+}
+
+.glass-pill {
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: linear-gradient(145deg, color-mix(in oklab, var(--surface-2) 84%, transparent), color-mix(in oklab, var(--surface-3) 80%, transparent));
+  color: var(--text-secondary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.glass-button {
+  border-radius: 1rem;
+  border: 1px solid var(--border-soft);
+  background: linear-gradient(145deg, color-mix(in oklab, var(--surface-2) 86%, transparent), color-mix(in oklab, var(--surface-3) 82%, transparent));
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: all 180ms ease;
+}
+
+.glass-button:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-glow);
+}
+
+.glass-button:active {
+  transform: translateY(0.5px) scale(0.99);
+}
+
+.glass-button-primary {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklab, var(--accent-strong) 46%, var(--border-soft));
+  background: linear-gradient(
+    140deg,
+    color-mix(in oklab, var(--accent) 62%, white 18%),
+    color-mix(in oklab, var(--accent-strong) 70%, white 8%)
+  );
+  color: #042034;
+  box-shadow: 0 14px 38px color-mix(in oklab, var(--accent-strong) 32%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
+.glass-button-primary:hover {
+  filter: brightness(1.04);
+}
+
+.glass-input {
+  border-radius: 1rem;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in oklab, var(--surface-2) 92%, transparent);
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.glass-input::placeholder {
+  color: var(--text-muted);
+}
+
+.glass-input:focus-visible {
+  outline: none;
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 18%, transparent), var(--shadow-soft);
+}
+
+.glass-title {
+  color: var(--text-primary);
+}
+
+.glass-text {
+  color: var(--text-secondary);
+}
+
+.glass-muted {
+  color: var(--text-muted);
+}
+
+.glass-player-controls {
+  border: 1px solid color-mix(in oklab, var(--border-soft) 88%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--surface-strong) 86%, transparent),
+    color-mix(in oklab, var(--surface-2) 82%, transparent)
+  );
+  box-shadow: 0 14px 46px rgba(2, 8, 23, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px) saturate(145%);
+}
+
+.glass-timeline-card {
+  border: 1px solid var(--border-soft);
+  background: linear-gradient(
+    145deg,
+    color-mix(in oklab, var(--surface-2) 84%, transparent),
+    color-mix(in oklab, var(--surface-3) 80%, transparent)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="light"] .glass-nav button {
+  color: #334155;
+}
+
+[data-theme="light"] .glass-badge {
+  color: #334155;
+}
+
+[data-theme="light"] .glass-button {
+  border-color: rgba(120, 156, 194, 0.4);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(234, 244, 255, 0.8));
+  color: #1f334a;
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+[data-theme="light"] .glass-player-controls {
+  border-color: rgba(130, 167, 208, 0.42);
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.58),
+    rgba(231, 242, 255, 0.42)
+  );
+  box-shadow: 0 14px 34px rgba(56, 189, 248, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.94);
 }
