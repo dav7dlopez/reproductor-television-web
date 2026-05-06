@@ -22,7 +22,7 @@ interface PlaylistStoreState extends PlaylistLoadState {
   selectedCategory?: string;
   loadForProfile: (profile: IPTVProfile) => Promise<void>;
   resetPlaylist: () => void;
-  selectChannel: (channel: IPTVChannel) => void;
+  selectChannel: (channel?: IPTVChannel) => void;
   setSearchQuery: (query: string) => void;
   setSelectedCountry: (country?: string) => void;
   setSelectedCategory: (category?: string) => void;
@@ -35,6 +35,7 @@ interface LoadChannelsResult {
 }
 
 interface PlaylistCacheEntry {
+  key: string;
   profileId: string;
   source: NonNullable<PlaylistStoreState["source"]>;
   channels: IPTVChannel[];
@@ -43,7 +44,7 @@ interface PlaylistCacheEntry {
   loadedAt: string;
 }
 
-const PLAYLIST_CACHE_TTL_MS = 45 * 60 * 1000;
+const PLAYLIST_CACHE_TTL_MS = 8 * 60 * 60 * 1000;
 const playlistCache = new Map<string, PlaylistCacheEntry>();
 
 const initialState: PlaylistLoadState & Pick<PlaylistStoreState, "groups" | "searchQuery"> = {
@@ -75,7 +76,8 @@ export const usePlaylistStore = create<PlaylistStoreState>((set, get) => ({
       return;
     }
 
-    const cached = playlistCache.get(profile.id);
+    const cacheKey = createPlaylistCacheKey(source);
+    const cached = playlistCache.get(cacheKey);
     if (cached) {
       const ageMs = Date.now() - new Date(cached.loadedAt).getTime();
       if (ageMs >= 0 && ageMs <= PLAYLIST_CACHE_TTL_MS) {
@@ -95,7 +97,7 @@ export const usePlaylistStore = create<PlaylistStoreState>((set, get) => ({
         });
         return;
       }
-      playlistCache.delete(profile.id);
+      playlistCache.delete(cacheKey);
     }
 
     set({
@@ -129,7 +131,8 @@ export const usePlaylistStore = create<PlaylistStoreState>((set, get) => ({
         source: resolvedSource,
         diagnostics,
       });
-      playlistCache.set(profile.id, {
+      playlistCache.set(cacheKey, {
+        key: cacheKey,
         profileId: profile.id,
         source: resolvedSource,
         channels,
@@ -190,4 +193,11 @@ function getPlaylistSource(profile: IPTVProfile): PlaylistStoreState["source"] {
   }
 
   return undefined;
+}
+
+function createPlaylistCacheKey(source: NonNullable<PlaylistStoreState["source"]>): string {
+  if (source.type === "m3u") {
+    return `m3u:${source.profileId}:${source.url}`;
+  }
+  return `xtream:${source.profileId}:${source.serverUrl}`;
 }

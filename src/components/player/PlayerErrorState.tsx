@@ -13,12 +13,15 @@ export function PlayerErrorState({ error, onRetry }: PlayerErrorStateProps) {
   if (!error) {
     return null;
   }
+  if (/operation was aborted|aborterror/i.test(error.technicalDetail ?? "")) {
+    return null;
+  }
 
   const showTechnicalDetails = process.env.NODE_ENV === "development" && (error.technicalDetail || error.diagnostics);
 
   return (
     <div className="absolute inset-0 z-20 grid place-items-center bg-slate-950/72 p-4 backdrop-blur-md light:bg-white/72">
-      <div className="max-w-xl rounded-[1.75rem] border border-rose-300/25 bg-rose-500/12 p-5 text-rose-50 shadow-[0_24px_90px_rgba(244,63,94,0.18)] light:bg-rose-50 light:text-rose-800">
+      <div className="max-w-xl rounded-[1.75rem] border border-rose-300/25 bg-rose-500/12 p-5 text-rose-50 shadow-[0_24px_90px_rgba(244,63,94,0.18)] light:bg-rose-50/92 light:text-rose-900">
         <div className="flex gap-3">
           <AlertTriangle className="mt-1 shrink-0" size={22} />
           <div>
@@ -26,7 +29,7 @@ export function PlayerErrorState({ error, onRetry }: PlayerErrorStateProps) {
             <p className="mt-2 text-sm leading-6 opacity-90">{error.message}</p>
             {error.suggestion ? <p className="mt-3 text-sm leading-6 opacity-85">{error.suggestion}</p> : null}
             {showTechnicalDetails ? (
-              <details className="mt-3 rounded-2xl bg-black/20 p-3 text-xs opacity-90 light:bg-white/60">
+              <details className="mt-3 rounded-2xl bg-black/20 p-3 text-xs opacity-90 light:bg-white/78">
                 <summary className="cursor-pointer font-semibold">Detalles técnicos</summary>
                 {error.technicalDetail ? <p className="mt-2 font-mono">{error.technicalDetail}</p> : null}
                 {error.diagnostics ? (

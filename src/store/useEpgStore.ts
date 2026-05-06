@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { matchIptvChannelsToEpg } from "@/lib/epg/epgMatcher";
 import { parseXMLTV } from "@/lib/epg/parseXMLTV";
 import { sortProgramsByDate } from "@/lib/epg/epgUtils";
-import { createProxyStreamUrl, maskStreamUrl } from "@/lib/player/playbackSupport";
+import { maskStreamUrl } from "@/lib/player/playbackSupport";
 import { buildXtreamXmltvUrl } from "@/lib/xtream/xtreamUrls";
 import { usePlayerStore } from "@/store/usePlayerStore";
 import type { IPTVChannel } from "@/types/channel";
@@ -26,8 +26,10 @@ interface EpgCacheEntry {
   matchesByChannelId: Record<string, ReturnType<typeof matchIptvChannelsToEpg>[string]>;
 }
 
-const EPG_CACHE_TTL_MS = 45 * 60 * 1000;
+const EPG_CACHE_TTL_MS = 8 * 60 * 60 * 1000;
 const epgCache = new Map<string, EpgCacheEntry>();
+const epgInflight = new Map<string, Promise<EpgCacheEntry>>();
+let epgLoadRevision = 0;
 
 const initialState: EpgLoadState = {
   status: "idle",
@@ -47,6 +49,18 @@ export const useEpgStore = create<EpgStoreState>((set) => ({
     }
 
     const cacheKey = `${profile.id}:${source.maskedUrl}:${source.proxied ? "proxy" : "direct"}`;
+    const loadRevision = ++epgLoadRevision;
+
+    const currentState = useEpgStore.getState();
+    if (
+      currentState.status === "success"
+      && currentState.source
+      && createSourceCacheKey(currentState.source) === cacheKey
+      && currentState.programs.length > 0
+    ) {
+      return;
+    }
+
     const cached = epgCache.get(cacheKey);
     if (cached) {
       const ageMs = Date.now() - new Date(cached.loadedAt).getTime();
@@ -69,10 +83,43 @@ export const useEpgStore = create<EpgStoreState>((set) => ({
     set({ ...initialState, source, status: "loading" });
 
     try {
-      const xml = await fetchXmltv(source.url);
-      const parsed = parseXMLTV(xml);
-      const programsByChannelId = buildProgramsIndex(parsed.programs);
-      const allMatches = matchIptvChannelsToEpg(channels, parsed.channels);
+      const cachedFromInflight = epgInflight.get(cacheKey);
+      let cacheEntry: EpgCacheEntry;
+      if (cachedFromInflight) {
+        cacheEntry = await cachedFromInflight;
+      } else {
+        const inflight = (async (): Promise<EpgCacheEntry> => {
+          const xml = await fetchXmltvWithFallback(source);
+          const parsed = parseXMLTV(xml);
+          const programsByChannelId = buildProgramsIndex(parsed.programs);
+          const allMatches = matchIptvChannelsToEpg(channels, parsed.channels);
+          const loadedAt = new Date().toISOString();
+          const entry: EpgCacheEntry = {
+            key: cacheKey,
+            loadedAt,
+            source,
+            channels: parsed.channels,
+            programs: parsed.programs,
+            programsByChannelId,
+            matchesByChannelId: allMatches,
+          };
+          epgCache.set(cacheKey, entry);
+          return entry;
+        })();
+        epgInflight.set(cacheKey, inflight);
+        try {
+          cacheEntry = await inflight;
+        } finally {
+          epgInflight.delete(cacheKey);
+        }
+      }
+
+      // Ignore stale responses if a newer load started later.
+      if (loadRevision !== epgLoadRevision) {
+        return;
+      }
+
+      const allMatches = cacheEntry.matchesByChannelId;
       const prioritizedChannelIds = options?.prioritizedChannelIds ?? [];
       const prioritizedSet = new Set(prioritizedChannelIds);
       const priorityMatches: typeof allMatches = {};
@@ -84,20 +131,23 @@ export const useEpgStore = create<EpgStoreState>((set) => ({
           restMatches[channelId] = match;
         }
       }
-      const loadedAt = new Date().toISOString();
+      const loadedAt = cacheEntry.loadedAt;
 
       set({
         status: "success",
         source,
-        channels: parsed.channels,
-        programs: parsed.programs,
-        programsByChannelId,
+        channels: cacheEntry.channels,
+        programs: cacheEntry.programs,
+        programsByChannelId: cacheEntry.programsByChannelId,
         matchesByChannelId: Object.keys(priorityMatches).length > 0 ? priorityMatches : allMatches,
         loadedAt,
         error: undefined,
       });
 
       window.setTimeout(() => {
+        if (loadRevision !== epgLoadRevision) {
+          return;
+        }
         useEpgStore.setState((state) => ({
           ...state,
           matchesByChannelId:
@@ -109,17 +159,10 @@ export const useEpgStore = create<EpgStoreState>((set) => ({
               : state.matchesByChannelId,
         }));
       }, 0);
-
-      epgCache.set(cacheKey, {
-        key: cacheKey,
-        loadedAt,
-        source,
-        channels: parsed.channels,
-        programs: parsed.programs,
-        programsByChannelId,
-        matchesByChannelId: allMatches,
-      });
     } catch (error) {
+      if (loadRevision !== epgLoadRevision) {
+        return;
+      }
       set({
         status: "error",
         source,
@@ -168,15 +211,15 @@ function buildProgramsIndex(programs: EpgProgram[]): Record<string, EpgProgram[]
 function resolveEpgSource(profile: IPTVProfile, playlistSource?: PlaylistSource): EpgSource | undefined {
   const manual = profile.epgUrl?.trim();
   const useExperimentalProxy = usePlayerStore.getState().useExperimentalProxy;
-  const proxyHeaderProfile = usePlayerStore.getState().proxyHeaderProfile;
 
   if (manual) {
-    const url = useExperimentalProxy ? createProxyStreamUrl(manual, proxyHeaderProfile) : manual;
+    const url = useExperimentalProxy ? createProxyPlaylistUrl(manual) : manual;
     return {
       profileId: profile.id,
       profileName: profile.name,
       profileType: profile.type,
       url,
+      originalUrl: manual,
       maskedUrl: maskStreamUrl(manual),
       from: "manual-profile",
       proxied: useExperimentalProxy,
@@ -188,12 +231,13 @@ function resolveEpgSource(profile: IPTVProfile, playlistSource?: PlaylistSource)
     if (!hint) {
       return undefined;
     }
-    const url = useExperimentalProxy ? createProxyStreamUrl(hint, proxyHeaderProfile) : hint;
+    const url = useExperimentalProxy ? createProxyPlaylistUrl(hint) : hint;
     return {
       profileId: profile.id,
       profileName: profile.name,
       profileType: profile.type,
       url,
+      originalUrl: hint,
       maskedUrl: maskStreamUrl(hint),
       from: "m3u-header",
       proxied: useExperimentalProxy,
@@ -202,12 +246,13 @@ function resolveEpgSource(profile: IPTVProfile, playlistSource?: PlaylistSource)
 
   if (profile.type === "xtream" && profile.xtream) {
     const xmltvUrl = buildXtreamXmltvUrl(profile.xtream);
-    const url = useExperimentalProxy ? createProxyStreamUrl(xmltvUrl, proxyHeaderProfile) : xmltvUrl;
+    const url = useExperimentalProxy ? createProxyPlaylistUrl(xmltvUrl) : xmltvUrl;
     return {
       profileId: profile.id,
       profileName: profile.name,
       profileType: profile.type,
       url,
+      originalUrl: xmltvUrl,
       maskedUrl: maskStreamUrl(xmltvUrl),
       from: "xtream-default",
       proxied: useExperimentalProxy,
@@ -215,6 +260,10 @@ function resolveEpgSource(profile: IPTVProfile, playlistSource?: PlaylistSource)
   }
 
   return undefined;
+}
+
+function createProxyPlaylistUrl(url: string): string {
+  return `/api/proxy/playlist?url=${encodeURIComponent(url)}`;
 }
 
 async function fetchXmltv(url: string): Promise<string> {
@@ -234,11 +283,26 @@ async function fetchXmltv(url: string): Promise<string> {
 
   const contentType = response.headers.get("content-type") ?? "";
   const text = await response.text();
+  if (/mpegurl|m3u/i.test(contentType) || /^\s*#EXTM3U/i.test(text)) {
+    throw new Error("La URL EPG parece una playlist M3U, no un XMLTV válido.");
+  }
   if (/text\/html/i.test(contentType) || /^\s*<html/i.test(text)) {
     throw new Error("La URL EPG respondió HTML en lugar de XMLTV.");
   }
 
   return text;
+}
+
+async function fetchXmltvWithFallback(source: EpgSource): Promise<string> {
+  try {
+    return await fetchXmltv(source.url);
+  } catch (error) {
+    if (!source.proxied || source.url === source.originalUrl) {
+      throw error;
+    }
+    // Fallback: if proxy path fails, try direct URL before failing EPG completely.
+    return fetchXmltv(source.originalUrl);
+  }
 }
 
 export function getEpgProgramsForIptvChannel(

@@ -22,18 +22,18 @@ export function SavedProfiles({ isLoading, onDelete, onEdit, onSelect, profiles 
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-sky-200 light:text-sky-700">Perfiles locales</p>
           <h2 className="mt-2 text-2xl font-semibold text-white light:text-slate-950">Acceso rápido</h2>
         </div>
-        <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-slate-300 light:text-slate-600">{profiles.length}</span>
+        <span className="glass-badge px-3 py-1 text-xs">{profiles.length}</span>
       </div>
 
       <div className="mt-4 grid max-h-[64vh] gap-2 overflow-auto pr-1">
         {isLoading ? <ProfileSkeleton /> : null}
         {!isLoading && profiles.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-white/15 bg-white/[0.04] p-5 text-sm text-slate-400 light:border-slate-300 light:bg-white/50 light:text-slate-500">
+          <div className="glass-card rounded-3xl border-dashed p-5 text-sm text-slate-400 light:text-slate-600">
             Todavía no hay perfiles guardados. Crea uno y podrás entrar sin volver a escribir los datos.
           </div>
         ) : null}
         {profiles.map((profile) => (
-          <article key={profile.id} className="rounded-2xl border border-white/10 bg-slate-950/35 p-3 transition hover:border-sky-300/35 hover:bg-sky-300/10 light:border-slate-300/70 light:bg-white/75 light:hover:border-sky-400/60">
+          <article key={profile.id} className="glass-card rounded-2xl p-3 transition hover:border-sky-300/35 hover:bg-sky-300/10">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 text-sm text-sky-100 light:text-sky-800">
@@ -51,7 +51,7 @@ export function SavedProfiles({ isLoading, onDelete, onEdit, onSelect, profiles 
               <div className="flex items-center gap-1">
                 <button
                   aria-label={`Editar ${profile.name}`}
-                  className="rounded-xl border border-sky-300/20 bg-sky-500/10 p-2 text-sky-100 transition hover:bg-sky-500/20 light:text-sky-700"
+                  className="glass-button rounded-xl p-2 text-sky-100 light:text-sky-700"
                   onClick={() => onEdit(profile.id)}
                   type="button"
                 >
