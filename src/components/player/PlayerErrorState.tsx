@@ -13,6 +13,9 @@ export function PlayerErrorState({ error, onRetry }: PlayerErrorStateProps) {
   if (!error) {
     return null;
   }
+  if (/operation was aborted|aborterror/i.test(error.technicalDetail ?? "")) {
+    return null;
+  }
 
   const showTechnicalDetails = process.env.NODE_ENV === "development" && (error.technicalDetail || error.diagnostics);
 

@@ -38,6 +38,7 @@ export interface EpgSource {
   profileName: string;
   profileType: "m3u" | "xtream";
   url: string;
+  originalUrl: string;
   maskedUrl: string;
   from: "manual-profile" | "m3u-header" | "xtream-default";
   proxied: boolean;

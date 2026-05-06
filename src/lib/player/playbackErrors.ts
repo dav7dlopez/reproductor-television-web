@@ -11,8 +11,8 @@ export function createPlaybackError(code: PlaybackErrorCode, options?: PlaybackE
   const base: Record<PlaybackErrorCode, Omit<PlaybackError, "code" | "technicalDetail" | "diagnostics">> = {
     stream_unreachable: {
       title: "Canal no accesible",
-      message: "El canal no respondió o el stream ha dejado de estar disponible. Puede ser temporal o depender del proveedor.",
-      suggestion: "Prueba otro canal o revisa si la URL del stream sigue activa.",
+      message: "Este canal no está disponible ahora mismo.",
+      suggestion: "Prueba otro canal o pulsa Reintentar.",
       recoverable: true,
     },
     cors_or_network: {
@@ -35,14 +35,14 @@ export function createPlaybackError(code: PlaybackErrorCode, options?: PlaybackE
     },
     media_error: {
       title: "Error de reproducción",
-      message: "El navegador encontró un problema al decodificar o reproducir el canal.",
-      suggestion: "Puede deberse a codecs no compatibles, CORS, stream caído o formato no apto para HTML5 video.",
+      message: "No se pudo reproducir este canal en el navegador.",
+      suggestion: "Prueba otro canal o pulsa Reintentar.",
       recoverable: true,
     },
     hls_error: {
       title: "Error HLS",
-      message: "hls.js no pudo cargar o procesar correctamente este stream HLS.",
-      suggestion: "Si es una URL .m3u8, revisa CORS, tokens caducados, codecs o segmentos inaccesibles.",
+      message: "No se pudo cargar correctamente el stream HLS.",
+      suggestion: "Pulsa Reintentar o prueba otro canal.",
       recoverable: true,
     },
     mpegts_direct: {
@@ -122,47 +122,47 @@ function addFormatSpecificMessage(error: PlaybackError): PlaybackError {
   if (diagnostics.proxyEnabled && diagnostics.proxyRemoteStatus === "403") {
     return {
       ...error,
-      message: "El proveedor ha rechazado la URL del stream incluso usando proxy. Puede que la URL HLS .m3u8 no exista, esté bloqueada, requiera otro formato, otro user-agent o solo funcione en apps IPTV.",
-      suggestion: "Si ocurre en todos los canales, el siguiente paso realista es un proxy/backend más completo o confirmar con el proveedor una URL HLS compatible con navegador.",
+      message: "El proveedor ha bloqueado este canal (403), incluso con proxy.",
+      suggestion: "Prueba otro canal. Si pasa en todos, hay bloqueo del proveedor.",
     };
   }
 
   if (diagnostics.proxyEnabled && diagnostics.activeStrategy === "mpegtsjs" && diagnostics.activeUrlIsProxied && error.code === "media_error") {
     return {
       ...error,
-      message: "El stream llega por proxy, pero el navegador no puede decodificarlo.",
-      suggestion: "Esto suele indicar un problema de codec/contenedor o compatibilidad del decodificador del navegador.",
+      message: "El canal llega, pero el navegador no puede decodificarlo.",
+      suggestion: "Suele ser un problema de codec o formato.",
     };
   }
 
   if (diagnostics.proxyEnabled && diagnostics.activeStrategy === "mpegtsjs" && diagnostics.activeUrlIsProxied && error.code === "cors_or_network") {
     return {
       ...error,
-      message: "No se pudo cargar el stream a través del proxy.",
-      suggestion: "Revisa si el proveedor responde 200/206 con el perfil de headers elegido. Si devuelve 403/404, el bloqueo está en origen.",
+      message: "No se pudo cargar el canal a través del proxy.",
+      suggestion: "Prueba otro canal o cambia el perfil de proxy.",
     };
   }
 
   if (diagnostics.possibleProxyNextStep) {
     return {
       ...error,
-      message: "El canal existe, pero el navegador no puede cargar el stream. Si ocurre en todos los canales, probablemente el proveedor bloquea reproducción web directa mediante CORS o requiere acceso desde app IPTV/proxy.",
-      suggestion: "Posible siguiente paso: proxy opcional. También puede fallar por codecs o por restricciones del proveedor.",
+      message: "Este navegador no pudo cargar el canal.",
+      suggestion: "Si falla en todos, puede ser bloqueo del proveedor o CORS.",
     };
   }
 
   if (diagnostics.looksLikeMpegTs && error.code !== "mpegts_direct" && error.code !== "mpegts_error") {
     return {
       ...error,
-      message: "Este canal parece usar MPEG-TS directo (.ts). Muchos navegadores no pueden reproducirlo directamente como fuente HTML5. Puede requerir HLS (.m3u8), soporte adicional con mpegts.js o un proxy/transmuxer.",
-      suggestion: "Se intenta primero una variante .m3u8 candidata y después mpegts.js si el navegador lo soporta. Si sigue fallando, probablemente sea CORS, codec o bloqueo del proveedor.",
+      message: "Este canal usa formato MPEG-TS directo (.ts).",
+      suggestion: "Puede no ser compatible con navegador.",
     };
   }
 
   if (diagnostics.looksLikeHls && (error.code === "media_error" || error.code === "unsupported_format" || error.code === "hls_error")) {
     return {
       ...error,
-      suggestion: "El stream parece HLS (.m3u8). Si falla, suele deberse a CORS, segmentos inaccesibles, token caducado o codecs no soportados por el navegador.",
+      suggestion: "Canal HLS (.m3u8). Si falla, suele ser CORS, token o codec.",
     };
   }
 

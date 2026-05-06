@@ -127,11 +127,11 @@ export function EpgTimeline({ programs, focusMs }: EpgTimelineProps) {
 
             return (
               <article
-                className={`glass-timeline-card absolute top-2 h-20 overflow-hidden rounded-xl border px-2 py-1 ${
+                className={`glass-timeline-card absolute top-2 h-20 overflow-hidden rounded-xl border px-2 py-1 transition-shadow ${
                   !program
                     ? "text-slate-400 light:text-slate-600"
                     : isCurrent
-                      ? "border-cyan-300/70 bg-cyan-300/14 text-cyan-100 light:text-slate-900"
+                      ? "border-cyan-300/85 bg-[linear-gradient(145deg,rgba(15,23,42,0.92),rgba(30,41,59,0.9))] text-cyan-100 shadow-[0_0_0_1px_rgba(56,189,248,0.35),0_14px_30px_rgba(14,165,233,0.24),inset_0_1px_0_rgba(255,255,255,0.22)] light:border-sky-600/70 light:bg-[linear-gradient(145deg,rgba(190,228,255,0.92),rgba(161,211,247,0.88))] light:text-slate-950 light:shadow-[0_0_0_1px_rgba(14,165,233,0.32),0_12px_24px_rgba(14,165,233,0.2),inset_0_1px_0_rgba(255,255,255,0.94)]"
                       : "text-slate-100 light:text-slate-800"
                 }`}
                 key={segment.id}
@@ -139,15 +139,15 @@ export function EpgTimeline({ programs, focusMs }: EpgTimelineProps) {
               >
                 {program ? (
                   <>
-                    <p className="line-clamp-2 text-[12px] font-semibold leading-4">{program.title}</p>
-                    <p className="mt-1 text-[11px] text-slate-300 light:text-slate-700">{formatProgramTime(program.startMs)} - {formatProgramTime(program.stopMs)}</p>
+                    <p className={`line-clamp-2 text-[12px] font-semibold leading-4 ${isCurrent ? "text-cyan-50 light:text-slate-950" : ""}`}>{program.title}</p>
+                    <p className={`mt-1 text-[11px] ${isCurrent ? "text-cyan-100/95 light:text-slate-900" : "text-slate-300 light:text-slate-700"}`}>{formatProgramTime(program.startMs)} - {formatProgramTime(program.stopMs)}</p>
                   </>
                 ) : (
                   <p className="pt-5 text-center text-[11px] text-slate-500 light:text-slate-600">Sin emisión</p>
                 )}
                 {program && isCurrent ? (
                   <div className="mt-2 h-1.5 rounded-full bg-white/12">
-                    <div className="h-full rounded-full bg-cyan-300" style={{ width: `${Math.round(getProgramProgress(program, nowTick) * 100)}%` }} />
+                    <div className="h-full rounded-full bg-cyan-300 shadow-[0_0_12px_rgba(34,211,238,0.55)]" style={{ width: `${Math.round(getProgramProgress(program, nowTick) * 100)}%` }} />
                   </div>
                 ) : null}
               </article>

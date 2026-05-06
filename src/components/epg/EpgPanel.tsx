@@ -12,9 +12,6 @@ export function EpgPanel({ channel }: { channel?: IPTVChannel }) {
   const [selectedDateText, setSelectedDateText] = useState(() => new Date().toISOString().slice(0, 10));
   const status = useEpgStore((state) => state.status);
   const error = useEpgStore((state) => state.error);
-  const source = useEpgStore((state) => state.source);
-  const epgChannels = useEpgStore((state) => state.channels);
-  const epgPrograms = useEpgStore((state) => state.programs);
   const programsByChannelId = useEpgStore((state) => state.programsByChannelId);
   const matchesByChannelId = useEpgStore((state) => state.matchesByChannelId);
 
@@ -45,8 +42,6 @@ export function EpgPanel({ channel }: { channel?: IPTVChannel }) {
   }, [nowTick, selectedDate]);
   const focusMs = focusBaseMs + focusOffsetMinutes * 60 * 1000;
   const current = getCurrentProgram(programs, focusMs);
-  const currentMatch = channel ? matchesByChannelId[channel.id] : undefined;
-  const matchedCount = Object.values(matchesByChannelId).filter((match) => match.method !== "none").length;
 
   return (
     <section>
@@ -71,16 +66,6 @@ export function EpgPanel({ channel }: { channel?: IPTVChannel }) {
       {channel && status === "error" ? <div className="rounded-2xl border border-rose-300/20 bg-rose-500/10 p-4 text-sm text-rose-100">{error}</div> : null}
       {channel && status !== "loading" && status !== "error" ? <EpgTimeline focusMs={focusMs} programs={programs} /> : null}
       {current ? <p className="mt-2 text-xs text-amber-200">Actual: {current.title}</p> : null}
-      {process.env.NODE_ENV === "development" ? (
-        <div className="glass-surface mt-3 rounded-xl p-2 text-[11px] text-slate-300 light:text-slate-700">
-          <p>EPG URL: {source?.maskedUrl ?? "no configurada"}</p>
-          <p>Estado: {status}</p>
-          <p>Canales EPG: {epgChannels.length}</p>
-          <p>Programas EPG: {epgPrograms.length}</p>
-          <p>Matches: {matchedCount} / {Object.keys(matchesByChannelId).length}</p>
-          <p>Método match canal: {currentMatch?.method ?? "none"}</p>
-        </div>
-      ) : null}
     </section>
   );
 }

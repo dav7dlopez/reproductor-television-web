@@ -1,8 +1,9 @@
 "use client";
 
 import { type Dispatch, type SetStateAction, useDeferredValue, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Loader2, MonitorPlay, Search, ShieldCheck, Star } from "lucide-react";
+import { AlertTriangle, Loader2, MonitorPlay, Search, Star } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { EpgPanel } from "@/components/epg/EpgPanel";
 import { getCurrentProgram, getProgramProgress, formatProgramTime } from "@/lib/epg/epgUtils";
 import { filterChannels } from "@/lib/playlist/groupChannels";
@@ -20,6 +21,21 @@ type LeftPanelMode = "country" | "category" | "channels" | "favorites";
 const CHANNELS_INITIAL_BATCH = 120;
 const CHANNELS_BATCH_SIZE = 160;
 
+function isSameChannel(a?: IPTVChannel, b?: IPTVChannel): boolean {
+  if (!a || !b) {
+    return false;
+  }
+  // Prefer deterministic match by source index when available.
+  if (a.id === b.id && a.sourceIndex === b.sourceIndex) {
+    return true;
+  }
+  // Fallbacks for edge cases where sourceIndex might differ/reset.
+  if (a.streamUrl && b.streamUrl && a.streamUrl === b.streamUrl) {
+    return true;
+  }
+  return a.id === b.id && a.name === b.name;
+}
+
 export function MainDashboardPlaceholder() {
   const activeProfile = useSessionStore((state) => state.activeProfile);
   const clearActiveProfile = useSessionStore((state) => state.clearActiveProfile);
@@ -29,7 +45,6 @@ export function MainDashboardPlaceholder() {
   const playlistSource = usePlaylistStore((state) => state.source);
   const selectedCountry = usePlaylistStore((state) => state.selectedCountry);
   const selectedCategory = usePlaylistStore((state) => state.selectedCategory);
-  const searchQuery = usePlaylistStore((state) => state.searchQuery);
   const resetPlayer = usePlayerStore((state) => state.resetPlayer);
   const loadEpgForProfile = useEpgStore((state) => state.loadForProfile);
   const [isDesktop, setIsDesktop] = useState<boolean>(() => (typeof window === "undefined" ? true : window.matchMedia("(min-width: 1024px)").matches));
@@ -54,11 +69,11 @@ export function MainDashboardPlaceholder() {
     if (!activeProfile || playlistStatus !== "success" || playlistChannels.length === 0) {
       return;
     }
-    const prioritized = filterChannels(playlistChannels, searchQuery, selectedCountry, selectedCategory)
+    const prioritized = filterChannels(playlistChannels, "", selectedCountry, selectedCategory)
       .slice(0, 80)
       .map((channel) => channel.id);
     void loadEpgForProfile(activeProfile, playlistChannels, playlistSource, { prioritizedChannelIds: prioritized });
-  }, [activeProfile, loadEpgForProfile, playlistChannels, playlistSource, playlistStatus, searchQuery, selectedCategory, selectedCountry]);
+  }, [activeProfile, loadEpgForProfile, playlistChannels, playlistSource, playlistStatus, selectedCategory, selectedCountry]);
 
   function handleExit() {
     resetPlayer();
@@ -100,6 +115,7 @@ function DesktopDashboard() {
   const channels = usePlaylistStore((state) => state.channels);
   const groups = usePlaylistStore((state) => state.groups);
   const selectedChannel = usePlaylistStore((state) => state.selectedChannel);
+  const playerChannel = usePlayerStore((state) => state.channel);
   const selectedCountry = usePlaylistStore((state) => state.selectedCountry);
   const selectedCategory = usePlaylistStore((state) => state.selectedCategory);
   const searchQuery = usePlaylistStore((state) => state.searchQuery);
@@ -134,7 +150,6 @@ function DesktopDashboard() {
   const epgProgramsByChannelId = useEpgStore((state) => state.programsByChannelId);
   const epgMatches = useEpgStore((state) => state.matchesByChannelId);
   const epgStatus = useEpgStore((state) => state.status);
-  const epgError = useEpgStore((state) => state.error);
   const epgSource = useEpgStore((state) => state.source);
   const nowProgram = selectedChannel
     ? getCurrentProgram(getEpgProgramsForIptvChannel(selectedChannel.id, epgProgramsByChannelId, epgMatches))
@@ -143,24 +158,26 @@ function DesktopDashboard() {
   return (
     <section className="hidden gap-4 lg:grid lg:grid-cols-[330px_minmax(0,1fr)_340px] xl:grid-cols-[360px_minmax(0,1fr)_360px]">
       <GlassPanel className="p-4 lg:max-h-[calc(100vh-7.3rem)] lg:overflow-hidden" elevated>
-        <div className="glass-nav mb-3 grid grid-cols-4 gap-2 p-1 text-sm">
-          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "favorites" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("favorites")} type="button">Favoritos</button>
-          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "country" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("country")} type="button">País</button>
-          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "category" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("category")} type="button">Categoría</button>
-          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "channels" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("channels")} type="button">Canales</button>
+        <div className="glass-nav mb-3 grid grid-cols-[1.25fr_1fr_1.25fr_1fr] gap-2 p-1.5 text-sm">
+          <button className={`w-full min-w-0 rounded-xl px-3 py-2.5 text-center whitespace-nowrap ${panelMode === "favorites" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("favorites")} type="button">Favoritos</button>
+          <button className={`w-full min-w-0 rounded-xl px-3 py-2.5 text-center whitespace-nowrap ${panelMode === "country" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("country")} type="button">País</button>
+          <button className={`w-full min-w-0 rounded-xl px-3 py-2.5 text-center whitespace-nowrap ${panelMode === "category" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("category")} type="button">Categoría</button>
+          <button className={`w-full min-w-0 rounded-xl px-3 py-2.5 text-center whitespace-nowrap ${panelMode === "channels" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("channels")} type="button">Canales</button>
         </div>
         <label className="relative mb-3 block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
           <input className="glass-input h-11 w-full rounded-2xl pl-10 pr-4 text-sm" onChange={(event) => { setSearchQuery(event.target.value); setPanelMode("channels"); }} placeholder="Buscar canal o programa" value={searchQuery} />
         </label>
 
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-          {groups.map((group) => (
-            <button className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${selectedCountry === group.country ? "glass-button-primary" : "glass-pill text-slate-200 light:text-slate-700"}`} key={group.country} onClick={() => { setSelectedCountry(group.country); setPanelMode("category"); }} type="button">
-              {group.country} · {group.totalChannels}
-            </button>
-          ))}
-        </div>
+        {panelMode === "country" ? (
+          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+            {groups.map((group) => (
+              <button className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${selectedCountry === group.country ? "glass-button-primary" : "glass-pill text-slate-200 light:text-slate-700"}`} key={group.country} onClick={() => { setSelectedCountry(group.country); setPanelMode("category"); }} type="button">
+                {group.country} · {group.totalChannels}
+              </button>
+            ))}
+          </div>
+        ) : null}
         {process.env.NODE_ENV === "development" && playlistDiagnostics ? (
           <div className="glass-surface mb-3 rounded-xl p-2 text-[11px] text-slate-300 light:text-slate-700">
             <p>M3U método: {playlistDiagnostics.method}</p>
@@ -197,7 +214,7 @@ function DesktopDashboard() {
                   toggleFavorite(activeProfile.id, channel);
                 }
               }}
-              isSelected={selectedChannel?.id === channel.id}
+              isSelected={isSameChannel(selectedChannel, channel) || isSameChannel(playerChannel, channel)}
               key={`${channel.id}-${channel.sourceIndex}`}
               onSelect={() => {
                 selectChannel(channel);
@@ -270,6 +287,7 @@ function MobileDashboard() {
   const channels = usePlaylistStore((state) => state.channels);
   const groups = usePlaylistStore((state) => state.groups);
   const selectedChannel = usePlaylistStore((state) => state.selectedChannel);
+  const playerChannel = usePlayerStore((state) => state.channel);
   const selectedCountry = usePlaylistStore((state) => state.selectedCountry);
   const selectedCategory = usePlaylistStore((state) => state.selectedCategory);
   const searchQuery = usePlaylistStore((state) => state.searchQuery);
@@ -305,7 +323,6 @@ function MobileDashboard() {
   const epgMatches = useEpgStore((state) => state.matchesByChannelId);
   const epgProgramsByChannelId = useEpgStore((state) => state.programsByChannelId);
   const epgStatus = useEpgStore((state) => state.status);
-  const epgError = useEpgStore((state) => state.error);
 
   return (
     <section className="grid min-w-0 max-w-full gap-4 lg:hidden">
@@ -315,10 +332,10 @@ function MobileDashboard() {
 
       <GlassPanel className="min-w-0 max-w-full overflow-x-hidden p-3">
         <div className="glass-nav mb-3 grid grid-cols-4 gap-2 p-1 text-xs">
-          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "favorites" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("favorites")} type="button">Fav</button>
-          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "country" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("country")} type="button">País</button>
-          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "category" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("category")} type="button">Categoría</button>
-          <button className={`rounded-xl px-3 py-2 text-center ${panelMode === "channels" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("channels")} type="button">Canales</button>
+          <button className={`w-full rounded-xl px-3 py-2 text-center ${panelMode === "favorites" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("favorites")} type="button">Fav</button>
+          <button className={`w-full rounded-xl px-3 py-2 text-center ${panelMode === "country" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("country")} type="button">País</button>
+          <button className={`w-full rounded-xl px-3 py-2 text-center ${panelMode === "category" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("category")} type="button">Categoría</button>
+          <button className={`w-full rounded-xl px-3 py-2 text-center ${panelMode === "channels" ? "glass-button-primary font-semibold" : "text-slate-300 light:text-slate-700"}`} onClick={() => setPanelMode("channels")} type="button">Canales</button>
         </div>
 
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
@@ -377,7 +394,7 @@ function MobileDashboard() {
                   toggleFavorite(activeProfile.id, channel);
                 }
               }}
-              isSelected={selectedChannel?.id === channel.id}
+              isSelected={isSameChannel(selectedChannel, channel) || isSameChannel(playerChannel, channel)}
               key={`${channel.id}-${channel.sourceIndex}`}
               onSelect={() => {
                 selectChannel(channel);
@@ -403,15 +420,6 @@ function MobileDashboard() {
 
       <GlassPanel className="min-w-0 max-w-full overflow-x-hidden p-3"><EpgPanel channel={selectedChannel} /></GlassPanel>
 
-      <GlassPanel className="p-3">
-        <div className="flex gap-3 text-xs text-cyan-100">
-          <ShieldCheck className="mt-0.5 shrink-0" size={16} />
-          <p>
-            EPG estado: {epgStatus === "loading" ? "Cargando..." : epgStatus === "error" ? epgError : "Activa"} · canales con match:{" "}
-            {Object.values(epgMatches).filter((match) => match.method !== "none").length}
-          </p>
-        </div>
-      </GlassPanel>
     </section>
   );
 }
@@ -445,7 +453,22 @@ function ChannelRow({
   const programs = getEpgProgramsForIptvChannel(channel.id, epgProgramsByChannelId, epgMatches);
   const nowProgram = getCurrentProgram(programs);
   return (
-    <motion.article animate={{ opacity: 1, y: 0 }} className={`glass-card rounded-2xl p-3 transition ${isSelected ? "border-sky-300/55 bg-sky-300/10" : "hover:bg-white/[0.08]"}`} initial={{ opacity: 0, y: 8 }} transition={{ delay: Math.min(index * 0.015, 0.2) }}>
+    <motion.article
+      animate={{ opacity: 1, y: 0 }}
+      className={`glass-card relative rounded-2xl p-3 transition ${
+        isSelected
+          ? "border-sky-300/80 bg-sky-400/16 shadow-[0_0_0_1px_rgba(125,211,252,0.45),0_12px_32px_rgba(56,189,248,0.24)] light:border-sky-500/65 light:bg-sky-200/55 light:shadow-[0_0_0_1px_rgba(14,165,233,0.32),0_12px_24px_rgba(14,165,233,0.2)]"
+          : "hover:bg-white/[0.08]"
+      }`}
+      initial={{ opacity: 0, y: 8 }}
+      transition={{ delay: Math.min(index * 0.015, 0.2) }}
+    >
+      {isSelected ? (
+        <span
+          aria-hidden="true"
+          className="absolute left-0 top-4 bottom-4 w-1.5 rounded-r-full bg-cyan-300/90 shadow-[0_0_12px_rgba(34,211,238,0.65)] light:bg-sky-500/90 light:shadow-[0_0_10px_rgba(14,165,233,0.45)]"
+        />
+      ) : null}
       <div
         className="w-full cursor-pointer text-left"
         onClick={onSelect}
@@ -462,7 +485,7 @@ function ChannelRow({
           <ChannelLogo channel={channel} />
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
-              <h3 className="min-w-0 flex-1 truncate font-semibold">{channel.name}</h3>
+              <h3 className={`min-w-0 flex-1 truncate font-semibold ${isSelected ? "text-sky-100 light:text-sky-950" : ""}`}>{channel.name}</h3>
               <div className="ml-auto flex shrink-0 items-center gap-2">
                 <span className="max-w-[7.4rem] truncate text-[11px] text-slate-300 light:text-slate-700 lg:max-w-[8.5rem] lg:text-xs">{nowProgram ? `${formatProgramTime(nowProgram.startMs)} - ${formatProgramTime(nowProgram.stopMs)}` : "--:--"}</span>
                 <button
@@ -478,7 +501,9 @@ function ChannelRow({
                 </button>
               </div>
             </div>
-            <p className="truncate text-xs text-slate-300 light:text-slate-700">{epgStatus === "loading" ? "Cargando EPG..." : nowProgram?.title ?? "Sin EPG"}</p>
+            <p className={`truncate text-xs ${isSelected ? "text-sky-100/95 light:text-sky-900" : "text-slate-300 light:text-slate-700"}`}>
+              {epgStatus === "loading" ? "Cargando EPG..." : nowProgram?.title ?? "Sin EPG"}
+            </p>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
               <div className="h-full bg-amber-300" style={{ width: `${nowProgram ? Math.round(getProgramProgress(nowProgram) * 100) : 0}%` }} />
             </div>
@@ -494,12 +519,16 @@ function ChannelLogo({ channel, size = "normal" }: { channel?: IPTVChannel; size
 
   if (channel?.logo) {
     return (
-      <div
-        aria-label={`Logo de ${channel.name}`}
-        className={`${dimensions} glass-card shrink-0 rounded-2xl bg-contain bg-center bg-no-repeat p-2`}
-        role="img"
-        style={{ backgroundImage: `url("${channel.logo}")` }}
-      />
+      <div aria-label={`Logo de ${channel.name}`} className={`${dimensions} glass-card relative shrink-0 overflow-hidden rounded-2xl p-1.5`} role="img">
+        <Image
+          alt={`Logo de ${channel.name}`}
+          className="h-full w-full rounded-xl bg-white/10 object-contain"
+          fill
+          sizes={size === "large" ? "80px" : "44px"}
+          src={channel.logo}
+          unoptimized
+        />
+      </div>
     );
   }
 
