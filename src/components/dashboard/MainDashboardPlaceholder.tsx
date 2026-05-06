@@ -150,6 +150,7 @@ function DesktopDashboard() {
   const epgProgramsByChannelId = useEpgStore((state) => state.programsByChannelId);
   const epgMatches = useEpgStore((state) => state.matchesByChannelId);
   const epgStatus = useEpgStore((state) => state.status);
+  const epgError = useEpgStore((state) => state.error);
   const epgSource = useEpgStore((state) => state.source);
   const nowProgram = selectedChannel
     ? getCurrentProgram(getEpgProgramsForIptvChannel(selectedChannel.id, epgProgramsByChannelId, epgMatches))
